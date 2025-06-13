@@ -11,6 +11,12 @@ export type AuthContext = AppContext & {
 };
 
 export async function requireApiKey(c: AuthContext, next: Next) {
+  // Special handling for openapi spec
+  if (c.req.path === "/openapi.json" || c.req.path === "/") {
+    return next();
+  }
+  
+  // Check for API key in headers
   const apiKey = c.req.header("X-API-Key");
   if (!apiKey) {
     return c.json({ error: "Missing API key" }, 401);
