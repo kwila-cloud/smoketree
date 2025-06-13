@@ -1,0 +1,19 @@
+{
+  "name": "Cloudflare Workers API Dev",
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:dev-22-bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "customizations": {
+    "vscode": {
+      "settings": {},
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "RooVeterinaryInc.roo-cline"
+      ]
+    }
+  },
+  "postCreateCommand": "npm install --prefix api"
+}

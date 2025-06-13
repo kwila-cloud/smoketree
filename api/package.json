@@ -1,12 +1,13 @@
 {
-	"name": "cloudflare-workers-openapi",
+	"name": "smoketree",
 	"version": "0.0.1",
 	"private": true,
 	"scripts": {
 		"deploy": "wrangler deploy",
 		"dev": "wrangler dev",
 		"start": "wrangler dev",
-		"cf-typegen": "wrangler types"
+		"cf-typegen": "wrangler types",
+		"test": "vitest run"
 	},
 	"dependencies": {
 		"chanfana": "^2.6.3",
@@ -17,6 +18,8 @@
 		"@cloudflare/workers-types": "^4.20250129.0",
 		"@types/node": "22.13.0",
 		"@types/service-worker-mock": "^2.0.4",
+		"better-sqlite3": "^11.10.0",
+		"vitest": "^3.2.3",
 		"wrangler": "^4.19.2"
 	}
 }

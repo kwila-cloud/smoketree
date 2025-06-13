@@ -42,7 +42,19 @@ export class MessageFetch extends OpenAPIRoute {
   };
 
   async handle(c: AppContext) {
-    // TODO: Implement DB fetch logic
-    return c.json({ error: "Not implemented" }, 501);
+    const organization = c.get("organization");
+    const { DB } = c.env;
+    const { messageUuid } = c.req.param();
+
+    // Fetch the message for this organization
+    const row = await DB.prepare(
+      `SELECT uuid, organization_uuid as organizationUuid, to_number as "to", content, segments, current_status as currentStatus, created_at as createdAt, updated_at as updatedAt
+       FROM message WHERE uuid = ? AND organization_uuid = ?`
+    ).bind(messageUuid, organization.uuid).first();
+
+    if (!row) {
+      return c.json({ error: "Message not found" }, 404);
+    }
+    return c.json(row);
   }
 }

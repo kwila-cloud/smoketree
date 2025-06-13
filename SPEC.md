@@ -24,16 +24,22 @@ This document outlines the design for an SMS API service built on Cloudflare Wor
 ### Organization Table
 ```sql
 CREATE TABLE organization (
-  uuid TEXT PRIMARY KEY,
+  uuid TEXT PRIMARY KEY NOT NULL,
   name TEXT NOT NULL,
-  admin_api_key TEXT UNIQUE NOT NULL,
-  user_api_key TEXT UNIQUE NOT NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_organization_admin_key ON organization(admin_api_key);
-CREATE INDEX idx_organization_user_key ON organization(user_api_key);
+CREATE TABLE api_key (
+  key TEXT PRIMARY KEY NOT NULL,
+  type TEXT NOT NULL CHECK (type IN ('admin', 'user')),
+  organization_uuid TEXT NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (organization_uuid) REFERENCES organization(uuid)
+);
+CREATE UNIQUE INDEX idx_api_key_key ON api_key(key);
+
+CREATE INDEX idx_organization_uuid ON organization(uuid);
 ```
 
 ### Message Table
@@ -90,9 +96,9 @@ CREATE INDEX idx_limit_month ON monthly_limit(month);
 ## API Specification
 
 ### Authentication
-All requests must include an API key in the `X-API-Key` header. Each organization has two API keys:
-- **Admin API Key**: Full access to all endpoints
-- **User API Key**: Limited access (cannot modify limits)
+All requests must include an API key in the `X-API-Key` header. Each organization has multiple API keys, each with a specific type:
+- **Admin API Key**: Full access to all endpoints.
+- **User API Key**: Limited access (cannot modify limits).
 
 ### Endpoints
 
@@ -103,20 +109,44 @@ Content-Type: application/json
 X-API-Key: {api_key}
 
 {
-  "to": "+1234567890",
-  "content": "Hello, world!"
+  "messages": [
+    {
+      "to": "+1234567890",
+      "content": "Hello, world!"
+    },
+    {
+      "to": "+1987654321",
+      "content": "Another message"
+    }
+  ]
 }
 
 Response 200:
 {
-  "uuid": "message-uuid",
-  "organizationUuid": "org-uuid",
-  "to": "+1234567890",
-  "content": "Hello, world!",
-  "segments": null, // Will be populated after sending
-  "currentStatus": "pending",
-  "createdAt": "2023-12-01T10:00:00Z",
-  "updatedAt": "2023-12-01T10:00:00Z"
+  "results": [
+    {
+      "uuid": "message-uuid-1",
+      "organizationUuid": "org-uuid",
+      "to": "+1234567890",
+      "content": "Hello, world!",
+      "segments": null,
+      "currentStatus": "pending",
+      "createdAt": "2023-12-01T10:00:00Z",
+      "updatedAt": "2023-12-01T10:00:00Z",
+      "error": "Optional error message if message failed or was rate-limited"
+    },
+    {
+      "uuid": "message-uuid-2",
+      "organizationUuid": "org-uuid",
+      "to": "+1987654321",
+      "content": "Another message",
+      "segments": null,
+      "currentStatus": "pending",
+      "createdAt": "2023-12-01T10:00:00Z",
+      "updatedAt": "2023-12-01T10:00:00Z",
+      "error": "Optional error message if message failed or was rate-limited"
+    }
+  ]
 }
 
 Response 429 (Rate Limited):
@@ -160,7 +190,13 @@ Response 200:
   "segments": 2,
   "currentStatus": "sent",
   "createdAt": "2023-12-01T10:00:00Z",
-  "updatedAt": "2023-12-01T10:01:00Z"
+  "updatedAt": "2023-12-01T10:01:00Z",
+  "error": "Optional error message if retry failed or was rate-limited"
+}
+
+Response 400:
+{
+  "error": "Message already sent"
 }
 ```
 
@@ -220,27 +256,31 @@ Response 200:
 ### Segment Calculation and Rate Limiting
 
 #### Pre-Send Rate Limiting
-1. Estimate segments using: `Math.ceil(content.length / 140)`
-2. Query current month segment usage for organization
+1. Estimate segments using: `Math.ceil(content.length / 150)`
+2. Query current month segment usage for organization (includes estimated segments from pending/rate_limited messages)
 3. Check if estimated total would exceed monthly limit
-4. If exceeded: Create message with `rate_limited` status
-5. If allowed: Proceed with Twilio API call
+4. If exceeded: Update message status to `rate_limited` and record a `message_attempt`.
+5. If allowed: Update message status to `pending` and record a `message_attempt`. (Actual Twilio API call happens in a separate background process.)
 
 #### Post-Send Segment Tracking
+(Handled by a separate background process or webhook)
 1. Extract actual segments from Twilio response: `response.num_segments`
 2. Update message record with actual segment count
-3. Update status based on Twilio result
+3. Update status based on Twilio result (e.g., `sent` or `failed`)
 
 ### Message Status Flow
 ```
-pending → sent (success)
-pending → failed (Twilio error)
-pending → rate_limited (limit exceeded)
+pending → sent (successful Twilio send)
+pending → failed (Twilio error during send)
+pending → rate_limited (monthly limit exceeded during initial check)
 
-rate_limited → sent (retry after limit increase)
-rate_limited → failed (retry failed)
-failed → sent (successful retry)
-failed → failed (retry failed again)
+rate_limited → pending (on retry, if limit allows)
+rate_limited → failed (on retry, if Twilio fails)
+rate_limited → rate_limited (on retry, if still over limit)
+
+failed → pending (on retry, if limit allows)
+failed → failed (on retry, if Twilio fails again)
+failed → rate_limited (on retry, if monthly limit exceeded)
 ```
 
 ### Key Queries
@@ -251,8 +291,6 @@ SELECT COALESCE(SUM(segments), 0) as used_segments
 FROM message 
 WHERE organization_uuid = ? 
 AND strftime('%Y-%m', created_at) = ?
-AND current_status = 'sent'
-AND segments IS NOT NULL;
 ```
 
 #### Monthly Limit Lookup
@@ -313,9 +351,9 @@ ORDER BY created_at DESC;
 - Provides better user experience vs conservative limiting
 
 ### Segment Tracking
-- `segments` field is `NULL` until message is successfully sent
-- Only successful messages (`sent` status) with non-NULL segments count toward usage
-- Failed and rate-limited messages consume no segments
+- `segments` field is populated with an *estimated* value upon message creation. It is updated with the *actual* value after successful sending via Twilio.
+- All messages with a non-NULL `segments` value (estimated or actual) count toward usage for rate limiting and reporting purposes.
+- Failed and rate-limited messages (before successful retry) still contribute their estimated segments to usage.
 
 ### Retry Logic
 - Retries are manual (API-driven), not automatic
@@ -334,7 +372,6 @@ ORDER BY created_at DESC;
 - `TWILIO_ACCOUNT_SID` - Twilio account identifier
 - `TWILIO_AUTH_TOKEN` - Twilio authentication token
 - `TWILIO_FROM_NUMBER` - Default sending phone number
-- `DATABASE_ID` - Cloudflare D1 database identifier
-- `DEFAULT_SEGMENT_LIMIT` - Default monthly limit for new organizations
+
 
 This design provides a robust, scalable SMS API service with proper multi-tenancy, rate limiting, and usage tracking capabilities.

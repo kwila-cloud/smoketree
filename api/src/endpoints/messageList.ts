@@ -41,7 +41,42 @@ export class MessageList extends OpenAPIRoute {
   };
 
   async handle(c: AppContext) {
-    // TODO: Implement DB list logic
-    return c.json({ error: "Not implemented" }, 501);
+    const organization = c.get("organization");
+    const { DB } = c.env;
+    let { status, limit = 50, offset = 0 } = c.req.query();
+
+    // Enforce maximum limit of 50
+    limit = Math.min(Number(limit) || 50, 50);
+    offset = Number(offset) || 0;
+
+    // Build query parts
+    let where = "WHERE organization_uuid = ?";
+    let params: any[] = [organization.uuid];
+    if (status) {
+      where += " AND current_status = ?";
+      params.push(status);
+    }
+
+    // Get total count
+    const totalRow = await DB.prepare(
+      `SELECT COUNT(*) as total FROM message ${where}`
+    ).bind(...params).first();
+    const total = totalRow ? totalRow.total : 0;
+
+    // Get paginated messages
+    const rows = await DB.prepare(
+      `SELECT uuid, organization_uuid as organizationUuid, to_number as "to", content, segments, current_status as currentStatus, created_at as createdAt, updated_at as updatedAt
+       FROM message
+       ${where}
+       ORDER BY created_at DESC
+       LIMIT ? OFFSET ?`
+    ).bind(...params, limit, offset).all();
+
+    return c.json({
+      messages: rows.results,
+      total,
+      limit,
+      offset,
+    });
   }
 }

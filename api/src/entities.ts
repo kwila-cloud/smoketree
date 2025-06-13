@@ -2,10 +2,15 @@
 export type Organization = {
   uuid: string;
   name: string;
-  adminApiKey: string;
-  userApiKey: string;
   createdAt: string;
   updatedAt: string;
+};
+
+export type ApiKey = {
+  key: string;
+  type: 'admin' | 'user';
+  organizationUuid: string;
+  createdAt: string;
 };
 
 export type Message = {
