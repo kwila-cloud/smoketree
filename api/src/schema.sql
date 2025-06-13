@@ -1,5 +1,3 @@
-// Cloudflare D1 DB schema setup for local dev/testing
-export const schema = `
 CREATE TABLE IF NOT EXISTS organization (
   uuid TEXT PRIMARY KEY,
   name TEXT NOT NULL,
@@ -56,4 +54,3 @@ CREATE TABLE IF NOT EXISTS monthly_limit (
   FOREIGN KEY (organization_uuid) REFERENCES organization(uuid)
 );
 CREATE INDEX IF NOT EXISTS idx_limit_month ON monthly_limit(month);
-`;
