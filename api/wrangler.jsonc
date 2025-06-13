@@ -4,7 +4,7 @@
  */
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "smoketree",
+	"name": "smoketree-api",
 	"main": "src/index.ts",
 	"compatibility_date": "2025-06-12",
 	"observability": {
