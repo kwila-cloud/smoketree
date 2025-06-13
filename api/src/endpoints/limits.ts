@@ -12,11 +12,13 @@ export class LimitsGetAll extends OpenAPIRoute {
         description: "Monthly limits",
         content: {
           "application/json": {
-            schema: z.array(z.object({
-              month: z.string(),
-              segmentLimit: z.number(),
-              updatedAt: z.string(),
-            })),
+            schema: z.array(
+              z.object({
+                month: z.string(),
+                segmentLimit: z.number(),
+                updatedAt: z.string(),
+              })
+            ),
           },
         },
       },
@@ -29,7 +31,9 @@ export class LimitsGetAll extends OpenAPIRoute {
     // Query all monthly limits for this organization
     const rows = await DB.prepare(
       `SELECT month, segment_limit as segmentLimit, updated_at as updatedAt FROM monthly_limit WHERE organization_uuid = ? ORDER BY month DESC`
-    ).bind(organization.uuid).all();
+    )
+      .bind(organization.uuid)
+      .all();
     return c.json(rows.results);
   }
 }
@@ -64,9 +68,15 @@ export class LimitsGetByMonth extends OpenAPIRoute {
     const { month } = c.req.param();
     const row = await DB.prepare(
       `SELECT month, segment_limit as segmentLimit, updated_at as updatedAt FROM monthly_limit WHERE organization_uuid = ? AND month = ?`
-    ).bind(organization.uuid, month).first();
+    )
+      .bind(organization.uuid, month)
+      .first();
     if (!row) {
-      return c.json({ error: "Not found" }, 404);
+      return c.json({
+        month,
+        segmentLimit: 0,
+        updatedAt: null,
+      });
     }
     return c.json({
       month: row.month,

@@ -46,8 +46,12 @@ describe("LimitsGetByMonth endpoint", () => {
     const context = createMockContext(db, "org-1", "2025-07");
     const endpoint = new LimitsGetByMonth();
     const res = await endpoint.handle(context);
-    expect(res.data).toEqual({ error: "Not found" });
-    expect(res.status).toBe(404);
+    expect(res.data).toEqual({
+      month: "2025-07",
+      segmentLimit: 0,
+      updatedAt: null,
+    });
+    expect(res.status).toBe(200);
   });
 
   it("does not return limits from another organization", async () => {
@@ -58,7 +62,11 @@ describe("LimitsGetByMonth endpoint", () => {
     const context = createMockContext(db, "org-1", "2025-06");
     const endpoint = new LimitsGetByMonth();
     const res = await endpoint.handle(context);
-    expect(res.data).toEqual({ error: "Not found" });
-    expect(res.status).toBe(404);
+     expect(res.data).toEqual({
+      month: "2025-06",
+      segmentLimit: 0,
+      updatedAt: null,
+    });
+    expect(res.status).toBe(200);
   });
 });
