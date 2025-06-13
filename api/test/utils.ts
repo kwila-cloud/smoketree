@@ -10,6 +10,7 @@ export function createTestDb() {
   const schema = fs.readFileSync(schemaPath, "utf-8");
   db.exec(schema);
 
+
   // Mimic D1's DB binding interface
   return {
     prepare: (query: string) => {
@@ -31,6 +32,12 @@ export function createTestDb() {
           };
         },
       };
+    },
+    seedOrganizations: (orgUuids: string[]) => {
+      const insert = db.prepare(`INSERT OR IGNORE INTO organization (uuid, name) VALUES (?, ?)`);
+      for (const uuid of orgUuids) {
+        insert.run(uuid, `Organization ${uuid}`);
+      }
     },
     dump: () => db.dump(),
     close: () => db.close(),

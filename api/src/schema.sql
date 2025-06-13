@@ -1,12 +1,12 @@
 CREATE TABLE IF NOT EXISTS organization (
-  uuid TEXT PRIMARY KEY,
+  uuid TEXT PRIMARY KEY NOT NULL,
   name TEXT NOT NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS api_key (
-  key TEXT PRIMARY KEY,
+  key TEXT PRIMARY KEY NOT NULL,
   type TEXT NOT NULL CHECK (type IN ('admin', 'user')),
   organization_uuid TEXT NOT NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -17,7 +17,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_api_key_key ON api_key(key);
 CREATE INDEX IF NOT EXISTS idx_organization_uuid ON organization(uuid);
 
 CREATE TABLE IF NOT EXISTS message (
-  uuid TEXT PRIMARY KEY,
+  uuid TEXT PRIMARY KEY NOT NULL,
   organization_uuid TEXT NOT NULL,
   to_number TEXT NOT NULL,
   content TEXT NOT NULL,
@@ -33,7 +33,7 @@ CREATE INDEX IF NOT EXISTS idx_message_created_at ON message(created_at);
 CREATE INDEX IF NOT EXISTS idx_message_org_month ON message(organization_uuid, created_at);
 
 CREATE TABLE IF NOT EXISTS message_attempt (
-  uuid TEXT PRIMARY KEY,
+  uuid TEXT PRIMARY KEY NOT NULL,
   message_uuid TEXT NOT NULL,
   status TEXT NOT NULL CHECK (status IN ('pending', 'sent', 'failed', 'rate_limited')),
   twilio_message_sid TEXT,

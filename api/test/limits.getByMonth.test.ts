@@ -3,8 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { createTestDb } from "./utils";
 
 // Mock AppContext
-function createMockContext(db: any, month: string) {
-  const orgUuid = "org-1";
+function createMockContext(db: any, orgUuid: string, month: string) {
   return {
     get: vi.fn((key: string) => {
       if (key === "organization") return { uuid: orgUuid };
@@ -20,6 +19,7 @@ describe("LimitsGetByMonth endpoint", () => {
 
   beforeEach(() => {
     db = createTestDb();
+    db.seedOrganizations(["org-1", "org-2"]);
   });
 
   afterEach(() => {
@@ -31,7 +31,7 @@ describe("LimitsGetByMonth endpoint", () => {
       `INSERT INTO monthly_limit (month, segment_limit, updated_at, organization_uuid) VALUES (?, ?, ?, ?)`
     ).bind("2025-06", 1000, "2025-06-01T00:00:00Z", "org-1").run();
 
-    const context = createMockContext(db, "2025-06");
+    const context = createMockContext(db, "org-1", "2025-06");
     const endpoint = new LimitsGetByMonth();
     const res = await endpoint.handle(context);
     expect(res.data).toEqual({
@@ -43,7 +43,7 @@ describe("LimitsGetByMonth endpoint", () => {
   });
 
   it("returns 404 if the limit does not exist for the month", async () => {
-    const context = createMockContext(db, "2025-07");
+    const context = createMockContext(db, "org-1", "2025-07");
     const endpoint = new LimitsGetByMonth();
     const res = await endpoint.handle(context);
     expect(res.data).toEqual({ error: "Not found" });
@@ -55,7 +55,7 @@ describe("LimitsGetByMonth endpoint", () => {
       `INSERT INTO monthly_limit (month, segment_limit, updated_at, organization_uuid) VALUES (?, ?, ?, ?)`
     ).bind("2025-06", 9999, "2025-06-01T00:00:00Z", "org-2").run();
 
-    const context = createMockContext(db, "2025-06");
+    const context = createMockContext(db, "org-1", "2025-06");
     const endpoint = new LimitsGetByMonth();
     const res = await endpoint.handle(context);
     expect(res.data).toEqual({ error: "Not found" });

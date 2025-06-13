@@ -3,8 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { createTestDb } from "./utils";
 
 // Mock AppContext
-function createMockContext(db: any) {
-  const orgUuid = "org-1"; // This is the UUID for the authenticated organization
+function createMockContext(db: any, orgUuid: string) {
   return {
     get: vi.fn((key: string) => {
       if (key === "organization") return { uuid: orgUuid };
@@ -21,6 +20,7 @@ describe("LimitsGetAll endpoint", () => {
 
   beforeEach(() => {
     db = createTestDb();
+    db.seedOrganizations(["org-1", "org-2"]);
   });
 
   afterEach(() => {
@@ -39,7 +39,7 @@ describe("LimitsGetAll endpoint", () => {
       ).bind(limit.month, limit.segmentLimit, limit.updatedAt, limit.organization_uuid).run();
     }
 
-    const context = createMockContext(db);
+    const context = createMockContext(db, "org-1");
     const endpoint = new LimitsGetAll();
     const res = await endpoint.handle(context);
     expect(res.data).toEqual([
@@ -50,7 +50,7 @@ describe("LimitsGetAll endpoint", () => {
   });
 
   it("returns an empty array if no limits exist", async () => {
-    const context = createMockContext(db);
+    const context = createMockContext(db, "org-1");
     const endpoint = new LimitsGetAll();
     const res = await endpoint.handle(context);
     expect(res.data).toEqual([]);
@@ -69,11 +69,11 @@ describe("LimitsGetAll endpoint", () => {
       ).bind(limit.month, limit.segmentLimit, limit.updatedAt, limit.organization_uuid).run();
     }
 
-    const context = createMockContext(db);
+    const context = createMockContext(db, "org-2");
     const endpoint = new LimitsGetAll();
     const res = await endpoint.handle(context);
     expect(res.data).toEqual([
-      { month: "2025-06", segmentLimit: 1000, updatedAt: "2025-06-01T00:00:00Z" }
+      { month: "2025-06", segmentLimit: 9999, updatedAt: "2025-06-01T00:00:00Z" }
     ]);
     expect(res.status).toBe(200);
   });
