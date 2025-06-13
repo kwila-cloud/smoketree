@@ -1,7 +1,7 @@
 // API endpoint: GET/PUT /api/v1/limits and /api/v1/limits/:month
 import { OpenAPIRoute } from "chanfana";
 import { z } from "zod";
-import type { AppContext } from "../types";
+import type { AppContext, AuthContext } from "../types";
 
 export class LimitsGetAll extends OpenAPIRoute {
   schema = {
@@ -89,7 +89,10 @@ export class LimitsPut extends OpenAPIRoute {
       },
     },
   };
-  async handle(c: AppContext) {
+  async handle(c: AuthContext) {
+    if (c.get("apiKeyType") !== "admin") {
+      return c.json({ error: "Forbidden", code: "FORBIDDEN" }, 403);
+    }
     // TODO: Implement set limit logic
     return c.json({ error: "Not implemented" }, 501);
   }

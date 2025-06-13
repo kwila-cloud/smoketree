@@ -8,7 +8,11 @@ import { UsageStatsGetAll, UsageStatsGetByMonth } from "./endpoints/usageStats";
 import { LimitsGetByMonth, LimitsGetAll, LimitsPut } from "./endpoints/limits";
 
 // Start a Hono app
+import { requireApiKey } from "./auth";
 const app = new Hono<{ Bindings: Env }>();
+
+// Apply authentication middleware to all routes
+app.use(requireApiKey);
 
 // Setup OpenAPI registry
 const openapi = fromHono(app, {
