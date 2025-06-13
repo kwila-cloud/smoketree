@@ -17,8 +17,6 @@ class GetUsageStatsGetAll200ResponseInner {
     required this.totalMessages,
     required this.totalSegments,
     required this.segmentLimit,
-    required this.isLimitExceeded,
-    required this.remainingSegments,
   });
 
   String month;
@@ -29,18 +27,12 @@ class GetUsageStatsGetAll200ResponseInner {
 
   num segmentLimit;
 
-  bool isLimitExceeded;
-
-  num remainingSegments;
-
   @override
   bool operator ==(Object other) => identical(this, other) || other is GetUsageStatsGetAll200ResponseInner &&
     other.month == month &&
     other.totalMessages == totalMessages &&
     other.totalSegments == totalSegments &&
-    other.segmentLimit == segmentLimit &&
-    other.isLimitExceeded == isLimitExceeded &&
-    other.remainingSegments == remainingSegments;
+    other.segmentLimit == segmentLimit;
 
   @override
   int get hashCode =>
@@ -48,12 +40,10 @@ class GetUsageStatsGetAll200ResponseInner {
     (month.hashCode) +
     (totalMessages.hashCode) +
     (totalSegments.hashCode) +
-    (segmentLimit.hashCode) +
-    (isLimitExceeded.hashCode) +
-    (remainingSegments.hashCode);
+    (segmentLimit.hashCode);
 
   @override
-  String toString() => 'GetUsageStatsGetAll200ResponseInner[month=$month, totalMessages=$totalMessages, totalSegments=$totalSegments, segmentLimit=$segmentLimit, isLimitExceeded=$isLimitExceeded, remainingSegments=$remainingSegments]';
+  String toString() => 'GetUsageStatsGetAll200ResponseInner[month=$month, totalMessages=$totalMessages, totalSegments=$totalSegments, segmentLimit=$segmentLimit]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -61,8 +51,6 @@ class GetUsageStatsGetAll200ResponseInner {
       json[r'totalMessages'] = this.totalMessages;
       json[r'totalSegments'] = this.totalSegments;
       json[r'segmentLimit'] = this.segmentLimit;
-      json[r'isLimitExceeded'] = this.isLimitExceeded;
-      json[r'remainingSegments'] = this.remainingSegments;
     return json;
   }
 
@@ -89,8 +77,6 @@ class GetUsageStatsGetAll200ResponseInner {
         totalMessages: num.parse('${json[r'totalMessages']}'),
         totalSegments: num.parse('${json[r'totalSegments']}'),
         segmentLimit: num.parse('${json[r'segmentLimit']}'),
-        isLimitExceeded: mapValueOfType<bool>(json, r'isLimitExceeded')!,
-        remainingSegments: num.parse('${json[r'remainingSegments']}'),
       );
     }
     return null;
@@ -142,8 +128,6 @@ class GetUsageStatsGetAll200ResponseInner {
     'totalMessages',
     'totalSegments',
     'segmentLimit',
-    'isLimitExceeded',
-    'remainingSegments',
   };
 }
 

@@ -9,8 +9,6 @@ Name | Type | Description | Notes
 **totalMessages** | **number** |  | [default to undefined]
 **totalSegments** | **number** |  | [default to undefined]
 **segmentLimit** | **number** |  | [default to undefined]
-**isLimitExceeded** | **boolean** |  | [default to undefined]
-**remainingSegments** | **number** |  | [default to undefined]
 
 ## Example
 
@@ -22,8 +20,6 @@ const instance: GetUsageStatsGetAll200ResponseInner = {
     totalMessages,
     totalSegments,
     segmentLimit,
-    isLimitExceeded,
-    remainingSegments,
 };
 ```
 

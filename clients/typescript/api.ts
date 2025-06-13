@@ -177,18 +177,6 @@ export interface GetUsageStatsGetAll200ResponseInner {
      * @memberof GetUsageStatsGetAll200ResponseInner
      */
     'segmentLimit': number;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof GetUsageStatsGetAll200ResponseInner
-     */
-    'isLimitExceeded': boolean;
-    /**
-     * 
-     * @type {number}
-     * @memberof GetUsageStatsGetAll200ResponseInner
-     */
-    'remainingSegments': number;
 }
 /**
  * 
