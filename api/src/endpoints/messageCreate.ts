@@ -1,22 +1,23 @@
 // API endpoint: POST /api/v1/messages
 import { OpenAPIRoute } from "chanfana";
 import { z } from "zod";
-import { estimateSegments, getCurrentMonth } from "../utils";
-import { sendSms } from "../twilio";
+import { attemptSendMessage, estimateSegments, getCurrentMonth } from "../utils";
 import type { AppContext } from "../types";
 import type { Message } from "../entities";
 
 export class MessageCreate extends OpenAPIRoute {
   schema = {
     tags: ["Messages"],
-    summary: "Send SMS Message",
+    summary: "Send SMS Messages",
     request: {
       body: {
         content: {
           "application/json": {
             schema: z.object({
-              to: z.string(),
-              content: z.string(),
+              messages: z.array(z.object({
+                to: z.string(),
+                content: z.string(),
+              })).min(1),
             }),
           },
         },
@@ -24,18 +25,21 @@ export class MessageCreate extends OpenAPIRoute {
     },
     responses: {
       "200": {
-        description: "Message created",
+        description: "Messages created",
         content: {
           "application/json": {
             schema: z.object({
-              uuid: z.string(),
-              organizationUuid: z.string(),
-              to: z.string(),
-              content: z.string(),
-              segments: z.number().nullable(),
-              currentStatus: z.string(),
-              createdAt: z.string(),
-              updatedAt: z.string(),
+              results: z.array(z.object({
+                uuid: z.string(),
+                organizationUuid: z.string(),
+                to: z.string(),
+                content: z.string(),
+                segments: z.number().nullable(),
+                currentStatus: z.string(),
+                createdAt: z.string(),
+                updatedAt: z.string(),
+                error: z.string().optional(),
+              })),
             }),
           },
         },
@@ -57,7 +61,21 @@ export class MessageCreate extends OpenAPIRoute {
   };
 
   async handle(c: AppContext) {
-    // TODO: Implement DB logic, rate limit, Twilio call, and response
-    return c.json({ error: "Not implemented" }, 501);
+    const organization = c.get("organization");
+    const { DB } = c.env;
+    const { messages } = await c.req.json();
+    const now = new Date().toISOString();
+    const month = getCurrentMonth();
+    const results = [];
+    for (const msg of messages) {
+      const messageUuid = crypto.randomUUID();
+      // We include the estimated segments in the message creation, to avoid the user creating a bunch of messages that would exceed their limit.
+      await DB.prepare(
+        `INSERT INTO message (uuid, organization_uuid, to_number, content, segments, current_status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+      ).bind(messageUuid, organization.uuid, msg.to, msg.content, estimateSegments(msg.content), 'pending', now, now).run();
+      const result = await attemptSendMessage({ DB, organization, messageUuid, to: msg.to, content: msg.content, month, now });
+      results.push(result);
+    }
+    return c.json({ results });
   }
 }

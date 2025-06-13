@@ -55,5 +55,9 @@
 			"database_name": "smoketree",
 			"database_id": "720f7c9e-5359-4b45-a5d6-53712648e063"
 		}
-	]
+	],
+	"triggers": {
+		// We want to send any pending messages once a minute
+		"crons": ["* * * * *"]
+	}
 }
