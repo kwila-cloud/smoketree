@@ -59,8 +59,20 @@ export class LimitsGetByMonth extends OpenAPIRoute {
     },
   };
   async handle(c: AppContext) {
-    // TODO: Implement get limits by month logic
-    return c.json({ error: "Not implemented" }, 501);
+    const organization = c.get("organization");
+    const { DB } = c.env;
+    const { month } = c.req.param();
+    const row = await DB.prepare(
+      `SELECT month, segment_limit as segmentLimit, updated_at as updatedAt FROM monthly_limit WHERE organization_uuid = ? AND month = ?`
+    ).bind(organization.uuid, month).first();
+    if (!row) {
+      return c.json({ error: "Not found" }, 404);
+    }
+    return c.json({
+      month: row.month,
+      segmentLimit: row.segmentLimit,
+      updatedAt: row.updatedAt,
+    });
   }
 }
 
