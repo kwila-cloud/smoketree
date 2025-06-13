@@ -90,7 +90,29 @@ export class UsageStatsGetByMonth extends OpenAPIRoute {
   };
 
   async handle(c: AppContext) {
-    // TODO: Implement usage stats by month logic
-    return c.json({ error: "Not implemented" }, 501);
+    const organization = c.get("organization");
+    const { DB } = c.env;
+    const { month } = c.req.param();
+    // Query usage stats for the given month (YYYY-MM)
+    const row = await DB.prepare(
+      `SELECT 
+        strftime('%Y-%m', created_at) as month,
+        COUNT(*) as totalMessages,
+        COALESCE(SUM(COALESCE(segments, 0)), 0) as totalSegments
+      FROM message
+      WHERE organization_uuid = ? AND strftime('%Y-%m', created_at) = ?`
+    ).bind(organization.uuid, month).first();
+
+    // Get segment limit for the month
+    const limitRow = await DB.prepare(
+      `SELECT segment_limit as segmentLimit FROM monthly_limit WHERE organization_uuid = ? AND month = ?`
+    ).bind(organization.uuid, month).first();
+
+    return c.json({
+      month,
+      totalMessages: row ? row.totalMessages : 0,
+      totalSegments: row ? row.totalSegments : 0,
+      segmentLimit: limitRow ? limitRow.segmentLimit : 0,
+    });
   }
 }
