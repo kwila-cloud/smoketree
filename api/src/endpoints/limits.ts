@@ -3,13 +3,38 @@ import { OpenAPIRoute } from "chanfana";
 import { z } from "zod";
 import type { AppContext } from "../types";
 
-export class LimitsGet extends OpenAPIRoute {
+export class LimitsGetAll extends OpenAPIRoute {
   schema = {
     tags: ["Limits"],
-    summary: "Get Monthly Limits",
+    summary: "Get All Monthly Limits",
+    responses: {
+      "200": {
+        description: "Monthly limits",
+        content: {
+          "application/json": {
+            schema: z.array(z.object({
+              month: z.string(),
+              segmentLimit: z.number(),
+              updatedAt: z.string(),
+            })),
+          },
+        },
+      },
+    },
+  };
+  async handle(c: AppContext) {
+    // TODO: Implement get all limits logic
+    return c.json({ error: "Not implemented" }, 501);
+  }
+}
+
+export class LimitsGetByMonth extends OpenAPIRoute {
+  schema = {
+    tags: ["Limits"],
+    summary: "Get Monthly Limit by Month",
     request: {
       params: z.object({
-        month: z.string().optional(),
+        month: z.string(),
       }),
     },
     responses: {
@@ -28,7 +53,7 @@ export class LimitsGet extends OpenAPIRoute {
     },
   };
   async handle(c: AppContext) {
-    // TODO: Implement get limits logic
+    // TODO: Implement get limits by month logic
     return c.json({ error: "Not implemented" }, 501);
   }
 }
