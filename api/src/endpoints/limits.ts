@@ -119,9 +119,30 @@ export class LimitsPut extends OpenAPIRoute {
   };
   async handle(c: AuthContext) {
     if (c.get("apiKeyType") !== "admin") {
-      return c.json({ error: "Forbidden", code: "FORBIDDEN" }, 403);
+      return c.json({ error: "Forbidden" }, 403);
     }
-    // TODO: Implement set limit logic
-    return c.json({ error: "Not implemented" }, 501);
+    const organization = c.get("organization");
+    const { DB } = c.env;
+    const { month } = c.req.param();
+    const { segmentLimit } = await c.req.json();
+    // Upsert the monthly limit using CURRENT_TIMESTAMP
+    await DB.prepare(
+      `INSERT INTO monthly_limit (month, segment_limit, updated_at, organization_uuid)
+       VALUES (?, ?, CURRENT_TIMESTAMP, ?)
+       ON CONFLICT(month, organization_uuid) DO UPDATE SET segment_limit = excluded.segment_limit, updated_at = CURRENT_TIMESTAMP`
+    )
+      .bind(month, segmentLimit, organization.uuid)
+      .run();
+    // Fetch the row to get the actual updatedAt value
+    const row = await DB.prepare(
+      `SELECT month, segment_limit as segmentLimit, updated_at as updatedAt FROM monthly_limit WHERE organization_uuid = ? AND month = ?`
+    )
+      .bind(organization.uuid, month)
+      .first();
+    return c.json({
+      month: row.month,
+      segmentLimit: row.segmentLimit,
+      updatedAt: row.updatedAt,
+    });
   }
 }
