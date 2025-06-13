@@ -23,8 +23,14 @@ export class LimitsGetAll extends OpenAPIRoute {
     },
   };
   async handle(c: AppContext) {
-    // TODO: Implement get all limits logic
-    return c.json({ error: "Not implemented" }, 501);
+    // Get the organization from context (set by auth middleware)
+    const organization = c.get("organization");
+    const { DB } = c.env;
+    // Query all monthly limits for this organization
+    const rows = await DB.prepare(
+      `SELECT month, segment_limit as segmentLimit, updated_at as updatedAt FROM monthly_limit WHERE organization_uuid = ? ORDER BY month DESC`
+    ).bind(organization.uuid).all();
+    return c.json(rows.results);
   }
 }
 
