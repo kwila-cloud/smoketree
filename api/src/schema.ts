@@ -3,13 +3,20 @@ export const schema = `
 CREATE TABLE IF NOT EXISTS organization (
   uuid TEXT PRIMARY KEY,
   name TEXT NOT NULL,
-  admin_api_key TEXT UNIQUE NOT NULL,
-  user_api_key TEXT UNIQUE NOT NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
-CREATE INDEX IF NOT EXISTS idx_organization_admin_key ON organization(admin_api_key);
-CREATE INDEX IF NOT EXISTS idx_organization_user_key ON organization(user_api_key);
+
+CREATE TABLE IF NOT EXISTS api_key (
+  key TEXT PRIMARY KEY,
+  type TEXT NOT NULL CHECK (type IN ('admin', 'user')),
+  organization_uuid TEXT NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (organization_uuid) REFERENCES organization(uuid)
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_api_key_key ON api_key(key);
+
+CREATE INDEX IF NOT EXISTS idx_organization_uuid ON organization(uuid);
 
 CREATE TABLE IF NOT EXISTS message (
   uuid TEXT PRIMARY KEY,
