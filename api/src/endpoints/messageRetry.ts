@@ -2,6 +2,7 @@
 import { OpenAPIRoute } from "chanfana";
 import { z } from "zod";
 import type { AppContext } from "../types";
+import { attemptSendMessage } from "../utils";
 
 export class MessageRetry extends OpenAPIRoute {
   schema = {
@@ -42,7 +43,16 @@ export class MessageRetry extends OpenAPIRoute {
   };
 
   async handle(c: AppContext) {
-    // TODO: Implement retry logic
-    return c.json({ error: "Not implemented" }, 501);
+    const { DB } = c.env;
+    const { messageUuid } = c.req.param();
+    // Use the shared attemptSendMessage logic
+    const result = await attemptSendMessage(DB, messageUuid);
+    if (result.error === 'Message not found') {
+      return c.json(result, 404);
+    }
+    if (result.error === 'Message already sent') {
+      return c.json(result, 400);
+    }
+    return c.json(result);
   }
 }

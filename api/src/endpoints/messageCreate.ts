@@ -1,7 +1,7 @@
 // API endpoint: POST /api/v1/messages
 import { OpenAPIRoute } from "chanfana";
 import { z } from "zod";
-import { attemptSendMessage, estimateSegments, getCurrentMonth } from "../utils";
+import { attemptSendMessage, estimateSegments } from "../utils";
 import type { AppContext } from "../types";
 import type { Message } from "../entities";
 
@@ -64,16 +64,14 @@ export class MessageCreate extends OpenAPIRoute {
     const organization = c.get("organization");
     const { DB } = c.env;
     const { messages } = await c.req.json();
-    const now = new Date().toISOString();
-    const month = getCurrentMonth();
     const results = [];
     for (const msg of messages) {
       const messageUuid = crypto.randomUUID();
       // We include the estimated segments in the message creation, to avoid the user creating a bunch of messages that would exceed their limit.
       await DB.prepare(
-        `INSERT INTO message (uuid, organization_uuid, to_number, content, segments, current_status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-      ).bind(messageUuid, organization.uuid, msg.to, msg.content, estimateSegments(msg.content), 'pending', now, now).run();
-      const result = await attemptSendMessage({ DB, organization, messageUuid, to: msg.to, content: msg.content, month, now });
+        `INSERT INTO message (uuid, organization_uuid, to_number, content, segments, current_status) VALUES (?, ?, ?, ?, ?, ?)`
+      ).bind(messageUuid, organization.uuid, msg.to, msg.content, estimateSegments(msg.content), 'pending').run();
+      const result = await attemptSendMessage(DB, messageUuid);
       results.push(result);
     }
     return c.json({ results });
