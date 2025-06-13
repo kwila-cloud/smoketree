@@ -9,7 +9,7 @@ Welcome to the Smoketree API Service! This powerful and flexible platform provid
 - **Message Retry:** 🔄 Effortlessly resend messages that were previously rate-limited or failed.
 
 ## 🚀 Get Started:
-Integrate with our straightforward API to unlock seamless SMS communication for your application. You can find the OpenAPI specification [here](https://smoketree.kwila.cloud/openapi.json).
+Integrate with our straightforward API to unlock seamless SMS communication for your application. You can find the OpenAPI specification [here](https://smoketree.kwila.cloud/).
 
 ## 📚 Client Libraries:
 Coming soon: Official client libraries for Dart and TypeScript to make integration even easier!
