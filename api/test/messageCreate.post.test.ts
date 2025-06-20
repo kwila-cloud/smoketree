@@ -1,5 +1,5 @@
 import { MessageCreate } from "../src/endpoints/messageCreate";
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { requireApiKey } from "../src/auth";
 import { Hono } from "hono";
 import { fromHono } from "chanfana";
