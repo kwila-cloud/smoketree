@@ -48,7 +48,7 @@ export class UsageStatsGetAll extends OpenAPIRoute {
         `SELECT month, segment_limit as segmentLimit FROM monthly_limit WHERE organization_uuid = ? AND month IN (${placeholders})`
       ).bind(organization.uuid, ...months).all();
       for (const row of limitRows.results) {
-        limits[row.month] = row.segmentLimit;
+        limits[row.month as string] = row.segmentLimit as number;
       }
     }
 
@@ -92,7 +92,8 @@ export class UsageStatsGetByMonth extends OpenAPIRoute {
   async handle(c: AppContext) {
     const organization = c.get("organization");
     const { DB } = c.env;
-    const { month } = c.req.param();
+    const data = await this.getValidatedData<typeof this.schema>();
+    const { month } = data.params;
     // Query usage stats for the given month (YYYY-MM)
     const row = await DB.prepare(
       `SELECT 

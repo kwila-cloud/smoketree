@@ -44,7 +44,8 @@ export class MessageFetch extends OpenAPIRoute {
   async handle(c: AppContext) {
     const organization = c.get("organization");
     const { DB } = c.env;
-    const { messageUuid } = c.req.param();
+    const data = await this.getValidatedData<typeof this.schema>();
+    const { messageUuid } = data.params;
 
     // Fetch the message for this organization
     const row = await DB.prepare(

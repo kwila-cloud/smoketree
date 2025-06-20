@@ -44,7 +44,8 @@ export class MessageRetry extends OpenAPIRoute {
 
   async handle(c: AppContext) {
     const { DB } = c.env;
-    const { messageUuid } = c.req.param();
+    const data = await this.getValidatedData<typeof this.schema>();
+    const { messageUuid } = data.params;
     // Use the shared attemptSendMessage logic
     const result = await attemptSendMessage(DB, messageUuid);
     if (result.error === 'Message not found') {

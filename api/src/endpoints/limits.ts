@@ -1,5 +1,5 @@
 // API endpoint: GET/PUT /api/v1/limits and /api/v1/limits/:month
-import { OpenAPIRoute } from "chanfana";
+import { OpenAPIRoute, contentJson } from "chanfana";
 import { z } from "zod";
 import type { AppContext, AuthContext } from "../types";
 
@@ -65,7 +65,8 @@ export class LimitsGetByMonth extends OpenAPIRoute {
   async handle(c: AppContext) {
     const organization = c.get("organization");
     const { DB } = c.env;
-    const { month } = c.req.param();
+    const data = await this.getValidatedData<typeof this.schema>();
+    const { month } = data.params;
     const row = await DB.prepare(
       `SELECT month, segment_limit as segmentLimit, updated_at as updatedAt FROM monthly_limit WHERE organization_uuid = ? AND month = ?`
     )
@@ -94,13 +95,7 @@ export class LimitsPut extends OpenAPIRoute {
       params: z.object({
         month: z.string(),
       }),
-      body: {
-        content: {
-          "application/json": {
-            schema: z.object({ segmentLimit: z.number() }),
-          },
-        },
-      },
+      body: contentJson(z.object({ segmentLimit: z.number() })),
     },
     responses: {
       "200": {
@@ -123,8 +118,9 @@ export class LimitsPut extends OpenAPIRoute {
     }
     const organization = c.get("organization");
     const { DB } = c.env;
-    const { month } = c.req.param();
-    const { segmentLimit } = await c.req.json();
+    const data = await this.getValidatedData<typeof this.schema>();
+    const { month } = data.params;
+    const { segmentLimit } = data.body;
     // Upsert the monthly limit using CURRENT_TIMESTAMP
     await DB.prepare(
       `INSERT INTO monthly_limit (month, segment_limit, updated_at, organization_uuid)
