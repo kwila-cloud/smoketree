@@ -31,7 +31,7 @@ export async function attemptSendMessage(DB: any, messageUuid: string) {
     `SELECT segment_limit as segmentLimit FROM monthly_limit WHERE organization_uuid = ? AND month = ?`
   ).bind(organizationUuid, month).first();
   const segmentLimit = limitRow ? limitRow.segmentLimit : 0;
-  if (segmentLimit && used > segmentLimit) {
+  if (used > segmentLimit) {
     await DB.prepare(
       `INSERT INTO message_attempt (uuid, message_uuid, status, error_message, attempted_at) VALUES (?, ?, ?, ?, ?)`
     ).bind(crypto.randomUUID(), messageUuid, 'rate_limited', 'Rate limited', now).run();
