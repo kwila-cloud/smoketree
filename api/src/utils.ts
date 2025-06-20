@@ -47,8 +47,8 @@ export async function attemptSendMessage(DB: any, messageUuid: string) {
   await DB.prepare(
     `INSERT INTO message_attempt (uuid, message_uuid, status, attempted_at) VALUES (?, ?, ?, ?)`
   ).bind(crypto.randomUUID(), messageUuid, 'pending', now).run();
-  return {
-    ...msgRow,
-    currentStatus: 'pending',
-  };
+  const finalMsgRow = await DB.prepare(
+    `SELECT uuid, organization_uuid as organizationUuid, to_number as "to", content, segments, current_status as currentStatus, created_at as createdAt, updated_at as updatedAt FROM message WHERE uuid = ?`
+  ).bind(messageUuid).first();
+  return finalMsgRow;
 }
