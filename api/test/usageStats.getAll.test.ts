@@ -1,28 +1,48 @@
 import { UsageStatsGetAll } from "../src/endpoints/usageStats";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { Hono } from "hono";
+import { fromHono } from "chanfana";
+import { requireApiKey } from "../src/auth";
+import { Env, ApiKeyType } from "../src/types";
+import { Organization } from "../src/entities";
 import { createTestDb } from "./utils";
 
-function createMockContext(db: any, orgUuid: string) {
-  return {
-    get: vi.fn((key: string) => {
-      if (key === "organization") return { uuid: orgUuid };
-    }),
-    env: { DB: db },
-    json: (data: any, status = 200) => ({ data, status }),
-  } as any;
-}
 
 describe("UsageStatsGetAll endpoint", () => {
   let db: any;
+  let app: Hono<{
+    Bindings: Env;
+    Variables: { organization: Organization; apiKeyType: ApiKeyType };
+  }>;
 
   beforeEach(() => {
     db = createTestDb();
     db.seedOrganizations(["org-1", "org-2"]);
+    app = new Hono();
+    app.use(requireApiKey);
+    const openapi = fromHono(app, { docs_url: "/" });
+    openapi.get("/api/v1/usage", UsageStatsGetAll);
   });
 
   afterEach(() => {
     db.close();
   });
+
+  async function simulateRequest(orgUuid: string, apiKeyType: string) {
+    const req = new Request(`http://localhost/api/v1/usage`, {
+      method: "GET",
+      headers: {
+        "X-Api-Key": orgUuid + "-" + apiKeyType,
+      },
+    });
+    // Mock the c.env.DB for the Hono app
+    const originalFetch = app.fetch;
+    app.fetch = async (request, env, ...rest) => {
+      return originalFetch(request, { ...(env || {}), DB: db }, ...rest);
+    };
+    const res = await app.request(req);
+    return res;
+  }
 
   it("returns usage stats for all months", async () => {
     // Insert messages for two months
@@ -40,10 +60,9 @@ describe("UsageStatsGetAll endpoint", () => {
       `INSERT INTO monthly_limit (organization_uuid, month, segment_limit, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`
     ).bind("org-1", "2025-05", 50, "2025-05-01T00:00:00Z", "2025-05-01T00:00:00Z").run();
 
-    const context = createMockContext(db, "org-1");
-    const endpoint = new UsageStatsGetAll();
-    const res = await endpoint.handle(context);
-    expect(res.data).toEqual([
+    const res = await simulateRequest("org-1", "user");
+    const data = await res.json();
+    expect(data).toEqual([
       { month: "2025-06", totalMessages: 1, totalSegments: 2, segmentLimit: 100 },
       { month: "2025-05", totalMessages: 1, totalSegments: 1, segmentLimit: 50 },
     ]);
@@ -51,10 +70,9 @@ describe("UsageStatsGetAll endpoint", () => {
   });
 
   it("returns an empty array if no messages exist", async () => {
-    const context = createMockContext(db, "org-1");
-    const endpoint = new UsageStatsGetAll();
-    const res = await endpoint.handle(context);
-    expect(res.data).toEqual([]);
+    const res = await simulateRequest("org-1", "user");
+    const data = await res.json();
+    expect(data).toEqual([]);
     expect(res.status).toBe(200);
   });
 
@@ -75,18 +93,17 @@ describe("UsageStatsGetAll endpoint", () => {
     ).bind("org-2", "2025-06", 200, "2025-06-01T00:00:00Z", "2025-06-01T00:00:00Z").run();
 
     // org-1 context should only see its own usage
-    const context1 = createMockContext(db, "org-1");
-    const endpoint = new UsageStatsGetAll();
-    const res1 = await endpoint.handle(context1);
-    expect(res1.data).toEqual([
+    const res1 = await simulateRequest("org-1", "user");
+    const data1 = await res1.json();
+    expect(data1).toEqual([
       { month: "2025-06", totalMessages: 1, totalSegments: 2, segmentLimit: 100 },
     ]);
     expect(res1.status).toBe(200);
 
     // org-2 context should only see its own usage
-    const context2 = createMockContext(db, "org-2");
-    const res2 = await endpoint.handle(context2);
-    expect(res2.data).toEqual([
+    const res2 = await simulateRequest("org-2", "user");
+    const data2 = await res2.json();
+    expect(data2).toEqual([
       { month: "2025-06", totalMessages: 1, totalSegments: 3, segmentLimit: 200 },
     ]);
     expect(res2.status).toBe(200);

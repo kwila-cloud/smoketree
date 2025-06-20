@@ -1,64 +1,78 @@
 import { MessageFetch } from "../src/endpoints/messageFetch";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { Hono } from "hono";
+import { fromHono } from "chanfana";
+import { requireApiKey } from "../src/auth";
+import { Env, ApiKeyType } from "../src/types";
+import { Organization } from "../src/entities";
 import { createTestDb } from "./utils";
 
-function createMockContext(db: any, orgUuid: string, params: any = {}) {
-  return {
-    get: vi.fn((key: string) => {
-      if (key === "organization") return { uuid: orgUuid };
-    }),
-    env: { DB: db },
-    req: {
-      param: () => params,
-    },
-    json: (data: any, status = 200) => ({ data, status }),
-  } as any;
-}
 
 describe("MessageFetch endpoint", () => {
   let db: any;
+  let app: Hono<{
+    Bindings: Env;
+    Variables: { organization: Organization; apiKeyType: ApiKeyType };
+  }>;
 
   beforeEach(() => {
     db = createTestDb();
     db.seedOrganizations(["org-1", "org-2"]);
+    app = new Hono();
+    app.use(requireApiKey);
+    const openapi = fromHono(app, { docs_url: "/" });
+    openapi.get("/api/v1/messages/:messageUuid", MessageFetch);
   });
 
   afterEach(() => {
     db.close();
   });
 
+  async function simulateRequest(orgUuid: string, apiKeyType: string, messageUuid: string) {
+    const req = new Request(`http://localhost/api/v1/messages/${messageUuid}`, {
+      method: "GET",
+      headers: {
+        "X-Api-Key": orgUuid + "-" + apiKeyType,
+      },
+    });
+    // Mock the c.env.DB for the Hono app
+    const originalFetch = app.fetch;
+    app.fetch = async (request, env, ...rest) => {
+      return originalFetch(request, { ...(env || {}), DB: db }, ...rest);
+    };
+    const res = await app.request(req);
+    return res;
+  }
+
   it("returns the message if it exists and belongs to the org", async () => {
     await db.prepare(
       `INSERT INTO message (uuid, organization_uuid, to_number, content, segments, current_status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
     ).bind("msg-1", "org-1", "+123", "hi", 2, "sent", "2025-06-01T00:00:00Z", "2025-06-01T00:00:00Z").run();
-    const context = createMockContext(db, "org-1", { messageUuid: "msg-1" });
-    const endpoint = new MessageFetch();
-    const res = await endpoint.handle(context);
+    const res = await simulateRequest("org-1", "user", "msg-1");
     expect(res.status).toBe(200);
-    expect(res.data.uuid).toBe("msg-1");
-    expect(res.data.organizationUuid).toBe("org-1");
-    expect(res.data.to).toBe("+123");
-    expect(res.data.content).toBe("hi");
-    expect(res.data.segments).toBe(2);
-    expect(res.data.currentStatus).toBe("sent");
+    const data = await res.json();
+    expect(data.uuid).toBe("msg-1");
+    expect(data.organizationUuid).toBe("org-1");
+    expect(data.to).toBe("+123");
+    expect(data.content).toBe("hi");
+    expect(data.segments).toBe(2);
+    expect(data.currentStatus).toBe("sent");
   });
 
   it("returns 404 if the message does not exist", async () => {
-    const context = createMockContext(db, "org-1", { messageUuid: "not-exist" });
-    const endpoint = new MessageFetch();
-    const res = await endpoint.handle(context);
+    const res = await simulateRequest("org-1", "user", "not-exist");
     expect(res.status).toBe(404);
-    expect(res.data.error).toBe("Message not found");
+    const data = await res.json();
+    expect(data.error).toBe("Message not found");
   });
 
   it("returns 404 if the message belongs to another org", async () => {
     await db.prepare(
       `INSERT INTO message (uuid, organization_uuid, to_number, content, segments, current_status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
     ).bind("msg-2", "org-2", "+456", "yo", 1, "sent", "2025-06-01T00:00:00Z", "2025-06-01T00:00:00Z").run();
-    const context = createMockContext(db, "org-1", { messageUuid: "msg-2" });
-    const endpoint = new MessageFetch();
-    const res = await endpoint.handle(context);
+    const res = await simulateRequest("org-1", "user", "msg-2");
     expect(res.status).toBe(404);
-    expect(res.data.error).toBe("Message not found");
+    const data = await res.json();
+    expect(data.error).toBe("Message not found");
   });
 });

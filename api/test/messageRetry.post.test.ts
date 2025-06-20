@@ -1,31 +1,50 @@
 import { MessageRetry } from "../src/endpoints/messageRetry";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { Hono } from "hono";
+import { fromHono } from "chanfana";
+import { requireApiKey } from "../src/auth";
+import { Env, ApiKeyType } from "../src/types";
+import { Organization } from "../src/entities";
 import { createTestDb } from "./utils";
 
-function createMockContext(db: any, orgUuid: string, params: any = {}) {
-  return {
-    get: vi.fn((key: string) => {
-      if (key === "organization") return { uuid: orgUuid };
-    }),
-    env: { DB: db },
-    req: {
-      param: () => params,
-    },
-    json: (data: any, status = 200) => ({ data, status }),
-  } as any;
-}
 
 describe("MessageRetry endpoint", () => {
   let db: any;
+  let app: Hono<{
+    Bindings: Env;
+    Variables: { organization: Organization; apiKeyType: ApiKeyType };
+  }>;
 
   beforeEach(() => {
     db = createTestDb();
     db.seedOrganizations(["org-1"]);
+    app = new Hono();
+    app.use(requireApiKey);
+    const openapi = fromHono(app, { docs_url: "/" });
+    openapi.post("/api/v1/messages/:messageUuid/retry", MessageRetry);
   });
 
   afterEach(() => {
     db.close();
   });
+
+  async function simulateRequest(orgUuid: string, apiKeyType: string, messageUuid: string) {
+    const req = new Request(`http://localhost/api/v1/messages/${messageUuid}/retry`, {
+      method: "POST",
+      headers: {
+        "X-Api-Key": orgUuid + "-" + apiKeyType,
+      },
+    });
+
+    // Mock the c.env.DB for the Hono app
+    const originalFetch = app.fetch;
+    app.fetch = async (request, env, ...rest) => {
+      return originalFetch(request, { ...(env || {}), DB: db }, ...rest);
+    };
+
+    const res = await app.request(req);
+    return res;
+  }
 
   it("retries a message and sets status to pending", async () => {
     // Insert a message with failed status
@@ -36,31 +55,28 @@ describe("MessageRetry endpoint", () => {
     await db.prepare(
       `INSERT INTO monthly_limit (organization_uuid, month, segment_limit, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`
     ).bind("org-1", "2025-06", 100, "2025-06-01T00:00:00Z", "2025-06-01T00:00:00Z").run();
-    const context = createMockContext(db, "org-1", { messageUuid: "msg-1" });
-    const endpoint = new MessageRetry();
-    const res = await endpoint.handle(context);
+    const res = await simulateRequest("org-1", "user", "msg-1");
     expect(res.status).toBe(200);
-    expect(res.data.uuid).toBe("msg-1");
-    expect(res.data.currentStatus).toBe("pending");
+    const data = await res.json();
+    expect(data.uuid).toBe("msg-1");
+    expect(data.currentStatus).toBe("pending");
   });
 
   it("returns 404 if the message does not exist", async () => {
-    const context = createMockContext(db, "org-1", { messageUuid: "not-exist" });
-    const endpoint = new MessageRetry();
-    const res = await endpoint.handle(context);
+    const res = await simulateRequest("org-1", "user", "not-exist");
     expect(res.status).toBe(404);
-    expect(res.data.error).toBe("Message not found");
+    const data = await res.json();
+    expect(data.error).toBe("Message not found");
   });
 
   it("returns 400 if the message is already sent", async () => {
     await db.prepare(
       `INSERT INTO message (uuid, organization_uuid, to_number, content, segments, current_status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
     ).bind("msg-2", "org-1", "+123", "already sent", 1, "sent", "2025-06-01T00:00:00Z", "2025-06-01T00:00:00Z").run();
-    const context = createMockContext(db, "org-1", { messageUuid: "msg-2" });
-    const endpoint = new MessageRetry();
-    const res = await endpoint.handle(context);
+    const res = await simulateRequest("org-1", "user", "msg-2");
     expect(res.status).toBe(400);
-    expect(res.data.error).toBe("Message already sent");
+    const data = await res.json();
+    expect(data.error).toBe("Message already sent");
   });
 
   it("rate limits the retry if over segment limit", async () => {
@@ -70,12 +86,11 @@ describe("MessageRetry endpoint", () => {
     await db.prepare(
       `INSERT INTO monthly_limit (organization_uuid, month, segment_limit, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`
     ).bind("org-1", "2025-06", 5, "2025-06-01T00:00:00Z", "2025-06-01T00:00:00Z").run();
-    const context = createMockContext(db, "org-1", { messageUuid: "msg-3" });
-    const endpoint = new MessageRetry();
-    const res = await endpoint.handle(context);
+    const res = await simulateRequest("org-1", "user", "msg-3");
     expect(res.status).toBe(200);
-    expect(res.data.currentStatus).toBe("rate_limited");
-    expect(res.data.error).toBe("Rate limited");
+    const data = await res.json();
+    expect(data.currentStatus).toBe("rate_limited");
+    expect(data.error).toBe("Rate limited");
   });
 
   it("retries a message that was previously rate limited and sets status to pending if under limit", async () => {
@@ -87,11 +102,10 @@ describe("MessageRetry endpoint", () => {
     await db.prepare(
       `INSERT INTO monthly_limit (organization_uuid, month, segment_limit, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`
     ).bind("org-1", "2025-06", 100, "2025-06-01T00:00:00Z", "2025-06-01T00:00:00Z").run();
-    const context = createMockContext(db, "org-1", { messageUuid: "msg-rl" });
-    const endpoint = new MessageRetry();
-    const res = await endpoint.handle(context);
+    const res = await simulateRequest("org-1", "user", "msg-rl");
     expect(res.status).toBe(200);
-    expect(res.data.uuid).toBe("msg-rl");
-    expect(res.data.currentStatus).toBe("pending");
+    const data = await res.json();
+    expect(data.uuid).toBe("msg-rl");
+    expect(data.currentStatus).toBe("pending");
   });
 });
