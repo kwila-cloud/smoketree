@@ -371,7 +371,7 @@ ORDER BY created_at DESC;
 ### Environment Variables
 - `TWILIO_ACCOUNT_SID` - Twilio account identifier
 - `TWILIO_AUTH_TOKEN` - Twilio authentication token
-- `TWILIO_FROM_NUMBER` - Default sending phone number
+- `TWILIO_FROM` - Sending phone number
 
 
 This design provides a robust, scalable SMS API service with proper multi-tenancy, rate limiting, and usage tracking capabilities.
