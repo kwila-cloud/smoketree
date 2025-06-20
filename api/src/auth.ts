@@ -11,7 +11,6 @@ export type AuthContext = AppContext & {
 };
 
 export async function requireApiKey(c: AuthContext, next: Next) {
-    console.log('hi!!');
   // Special handling for openapi spec
   if (c.req.path === "/openapi.json" || c.req.path === "/") {
     return next();
