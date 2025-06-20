@@ -1,5 +1,5 @@
 // API endpoint: POST /api/v1/messages
-import { OpenAPIRoute } from "chanfana";
+import { OpenAPIRoute, contentJson } from "chanfana";
 import { z } from "zod";
 import { attemptSendMessage, estimateSegments } from "../utils";
 import type { AppContext } from "../types";
@@ -10,18 +10,12 @@ export class MessageCreate extends OpenAPIRoute {
     tags: ["Messages"],
     summary: "Send SMS Messages",
     request: {
-      body: {
-        content: {
-          "application/json": {
-            schema: z.object({
-              messages: z.array(z.object({
-                to: z.string(),
-                content: z.string(),
-              })).min(1),
-            }),
-          },
-        },
-      },
+      body: contentJson(z.object({
+        messages: z.array(z.object({
+          to: z.string(),
+          content: z.string(),
+        })).min(1),
+      })),
     },
     responses: {
       "200": {
@@ -63,7 +57,8 @@ export class MessageCreate extends OpenAPIRoute {
   async handle(c: AppContext) {
     const organization = c.get("organization");
     const { DB } = c.env;
-    const { messages } = await c.req.json();
+    const data = await this.getValidatedData<typeof this.schema>();
+    const { messages } = data.body;
     const results = [];
     for (const msg of messages) {
       const messageUuid = crypto.randomUUID();

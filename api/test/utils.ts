@@ -34,9 +34,14 @@ export function createTestDb() {
       };
     },
     seedOrganizations: (orgUuids: string[]) => {
-      const insert = db.prepare(`INSERT OR IGNORE INTO organization (uuid, name) VALUES (?, ?)`);
+      const insertOrg = db.prepare(`INSERT OR IGNORE INTO organization (uuid, name) VALUES (?, ?)`);
+      const insertAdminKey = db.prepare(`INSERT OR IGNORE INTO api_key (key, type, organization_uuid) VALUES (?, ?, ?)`);
+      const insertUserKey = db.prepare(`INSERT OR IGNORE INTO api_key (key, type, organization_uuid) VALUES (?, ?, ?)`);
+
       for (const uuid of orgUuids) {
-        insert.run(uuid, `Organization ${uuid}`);
+        insertOrg.run(uuid, `Organization ${uuid}`);
+        insertAdminKey.run(`${uuid}-admin`, 'admin', uuid);
+        insertUserKey.run(`${uuid}-user`, 'user', uuid);
       }
     },
     dump: () => db.dump(),

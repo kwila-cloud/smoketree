@@ -43,8 +43,8 @@ export class MessageList extends OpenAPIRoute {
   async handle(c: AppContext) {
     const organization = c.get("organization");
     const { DB } = c.env;
-    let { status, limit = 50, offset = 0 } = c.req.query();
-
+    const data = await this.getValidatedData<typeof this.schema>();
+     let { status, limit = 50, offset = 0 } = data.query;
     // Enforce maximum limit of 50
     limit = Math.min(Number(limit) || 50, 50);
     offset = Number(offset) || 0;

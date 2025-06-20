@@ -1,73 +1,98 @@
 import { LimitsPut } from "../src/endpoints/limits";
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createTestDb } from "./utils";
-
-function createMockContext(db: any, orgUuid: string, month: string, apiKeyType: string, segmentLimit: number) {
-  return {
-    get: vi.fn((key: string) => {
-      if (key === "organization") return { uuid: orgUuid };
-      if (key === "apiKeyType") return apiKeyType;
-    }),
-    env: { DB: db },
-    req: {
-      param: () => ({ month }),
-      json: async () => ({ segmentLimit }),
-    },
-    json: (data: any, status = 200) => ({ data, status }),
-  } as any;
-}
+import { requireApiKey } from "../src/auth";
+import { Hono } from "hono";
+import { fromHono } from "chanfana";
 
 describe("LimitsPut endpoint", () => {
   let db: any;
+  let app: Hono;
 
   beforeEach(() => {
     db = createTestDb();
     db.seedOrganizations(["org-1"]);
+    app = new Hono();
+    app.use(requireApiKey);
+    const openapi = fromHono(app, { docs_url: "/" });
+    openapi.put("/api/v1/limits/:month", LimitsPut);
   });
 
   afterEach(() => {
     db.close();
   });
 
+  async function simulateRequest(
+    orgUuid: string,
+    apiKeyType: string,
+    month: string,
+    segmentLimit: number
+  ) {
+    const req = new Request(`http://localhost/api/v1/limits/${month}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Api-Key": orgUuid + "-" + apiKeyType,
+      },
+      body: JSON.stringify({ segmentLimit }),
+    });
+
+    // Mock the c.env.DB for the Hono app
+    const originalFetch = app.fetch;
+    app.fetch = async (request, env, ...rest) => {
+      return originalFetch(request, { ...env, DB: db }, ...rest);
+    };
+
+    const res = await app.request(req);
+    return res;
+  }
+
   it("forbids non-admin API keys", async () => {
-    const context = createMockContext(db, "org-1", "2025-06", "user", 1234);
-    const endpoint = new LimitsPut();
-    const res = await endpoint.handle(context);
+    const res = await simulateRequest("org-1", "user", "2025-06", 1234);
+    const data = await res.json();
     expect(res.status).toBe(403);
-    expect(res.data.error).toBe("Forbidden");
+    expect(data.error).toBe("Forbidden");
   });
 
   it("inserts a new monthly limit for admin", async () => {
-    const context = createMockContext(db, "org-1", "2025-06", "admin", 1500);
-    const endpoint = new LimitsPut();
-    const res = await endpoint.handle(context);
+    const res = await simulateRequest("org-1", "admin", "2025-06", 1500);
+    const data = await res.json();
+
     expect(res.status).toBe(200);
-    expect(res.data.month).toBe("2025-06");
-    expect(res.data.segmentLimit).toBe(1500);
-    expect(typeof res.data.updatedAt).toBe("string");
+    expect(data.month).toBe("2025-06");
+    expect(data.segmentLimit).toBe(1500);
+    expect(typeof data.updatedAt).toBe("string");
     // Check DB
-    const row = await db.prepare(
-      `SELECT segment_limit FROM monthly_limit WHERE organization_uuid = ? AND month = ?`
-    ).bind("org-1", "2025-06").first();
+    const row = await db
+      .prepare(
+        `SELECT segment_limit FROM monthly_limit WHERE organization_uuid = ? AND month = ?`
+      )
+      .bind("org-1", "2025-06")
+      .first();
     expect(row.segment_limit).toBe(1500);
   });
 
   it("updates an existing monthly limit for admin", async () => {
     // Insert initial value
-    await db.prepare(
-      `INSERT INTO monthly_limit (month, segment_limit, updated_at, organization_uuid) VALUES (?, ?, CURRENT_TIMESTAMP, ?)`
-    ).bind("2025-06", 1000, "org-1").run();
-    const context = createMockContext(db, "org-1", "2025-06", "admin", 2000);
-    const endpoint = new LimitsPut();
-    const res = await endpoint.handle(context);
+    await db
+      .prepare(
+        `INSERT INTO monthly_limit (month, segment_limit, updated_at, organization_uuid) VALUES (?, ?, CURRENT_TIMESTAMP, ?)`
+      )
+      .bind("2025-06", 1000, "org-1")
+      .run();
+    const res = await simulateRequest("org-1", "admin", "2025-06", 2000);
+    const data = await res.json();
     expect(res.status).toBe(200);
-    expect(res.data.month).toBe("2025-06");
-    expect(res.data.segmentLimit).toBe(2000);
-    expect(typeof res.data.updatedAt).toBe("string");
+    expect(data.month).toBe("2025-06");
+    expect(data.segmentLimit).toBe(2000);
+    expect(typeof data.updatedAt).toBe("string");
     // Check DB
-    const row = await db.prepare(
-      `SELECT segment_limit FROM monthly_limit WHERE organization_uuid = ? AND month = ?`
-    ).bind("org-1", "2025-06").first();
+    const row = await db
+      .prepare(
+        `SELECT segment_limit FROM monthly_limit WHERE organization_uuid = ? AND month = ?`
+      )
+      .bind("org-1", "2025-06")
+      .first();
     expect(row.segment_limit).toBe(2000);
   });
 });

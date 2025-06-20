@@ -1,31 +1,45 @@
 import { LimitsGetAll } from "../src/endpoints/limits";
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createTestDb } from "./utils";
-
-// Mock AppContext
-function createMockContext(db: any, orgUuid: string) {
-  return {
-    get: vi.fn((key: string) => {
-      if (key === "organization") return { uuid: orgUuid };
-    }),
-    env: {
-      DB: db,
-    },
-    json: (data: any, status = 200) => ({ data, status }),
-  } as any;
-}
+import { requireApiKey } from "../src/auth";
+import { Hono } from "hono";
+import { fromHono } from "chanfana";
 
 describe("LimitsGetAll endpoint", () => {
   let db: any;
+  let app: Hono;
 
   beforeEach(() => {
     db = createTestDb();
     db.seedOrganizations(["org-1", "org-2"]);
+    app = new Hono();
+    app.use(requireApiKey);
+    const openapi = fromHono(app, { docs_url: "/" });
+    openapi.get("/api/v1/limits", LimitsGetAll);
   });
 
   afterEach(() => {
     db.close();
   });
+
+  async function simulateRequest(orgUuid: string, apiKeyType: string) {
+    const req = new Request(`http://localhost/api/v1/limits`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Api-Key": orgUuid + "-" + apiKeyType,
+      },
+    });
+
+    // Mock the c.env.DB for the Hono app
+    const originalFetch = app.fetch;
+    app.fetch = async (request, env, ...rest) => {
+      return originalFetch(request, { ...env, DB: db }, ...rest);
+    };
+
+    const res = await app.request(req);
+    return res;
+  }
 
   it("returns all monthly limits for the organization", async () => {
     const allLimits = [
@@ -39,22 +53,20 @@ describe("LimitsGetAll endpoint", () => {
       ).bind(limit.month, limit.segmentLimit, limit.updatedAt, limit.organization_uuid).run();
     }
 
-    const context = createMockContext(db, "org-1");
-    const endpoint = new LimitsGetAll();
-    const res = await endpoint.handle(context);
-    expect(res.data).toEqual([
+    const res = await simulateRequest("org-1", "user");
+    const data = await res.json();
+    expect(res.status).toBe(200);
+    expect(data).toEqual([
       { month: "2025-06", segmentLimit: 1000, updatedAt: "2025-06-01T00:00:00Z" },
       { month: "2025-05", segmentLimit: 900, updatedAt: "2025-05-01T00:00:00Z" },
     ]);
-    expect(res.status).toBe(200);
   });
 
   it("returns an empty array if no limits exist", async () => {
-    const context = createMockContext(db, "org-1");
-    const endpoint = new LimitsGetAll();
-    const res = await endpoint.handle(context);
-    expect(res.data).toEqual([]);
+    const res = await simulateRequest("org-1", "user");
+    const data = await res.json();
     expect(res.status).toBe(200);
+    expect(data).toEqual([]);
   });
 
   it("does not return limits from another organization", async () => {
@@ -69,12 +81,11 @@ describe("LimitsGetAll endpoint", () => {
       ).bind(limit.month, limit.segmentLimit, limit.updatedAt, limit.organization_uuid).run();
     }
 
-    const context = createMockContext(db, "org-2");
-    const endpoint = new LimitsGetAll();
-    const res = await endpoint.handle(context);
-    expect(res.data).toEqual([
+    const res = await simulateRequest("org-2", "user");
+    const data = await res.json();
+    expect(res.status).toBe(200);
+    expect(data).toEqual([
       { month: "2025-06", segmentLimit: 9999, updatedAt: "2025-06-01T00:00:00Z" }
     ]);
-    expect(res.status).toBe(200);
   });
 });
