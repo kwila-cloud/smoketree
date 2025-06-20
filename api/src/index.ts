@@ -9,6 +9,7 @@ import { LimitsGetByMonth, LimitsGetAll, LimitsPut } from "./endpoints/limits";
 
 // Start a Hono app
 import { requireApiKey } from "./auth";
+import { scheduled } from "./scheduled";
 const app = new Hono<{ Bindings: Env }>();
 
 // Apply authentication middleware to all routes
@@ -34,5 +35,7 @@ openapi.put("/api/v1/limits/:month", LimitsPut);
 // You may also register routes for non OpenAPI directly on Hono
 // app.get('/test', (c) => c.text('Hono!'))
 
-// Export the Hono app
-export default app;
+export default {
+	fetch: app.fetch,
+	scheduled,
+}
