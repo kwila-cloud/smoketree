@@ -19,7 +19,7 @@ All URIs are relative to *https://smoketree.kwila.cloud/api/v1*
 import {
     MessagesApi,
     Configuration
-} from 'smoketree';
+} from 'smoketree-ts';
 
 const configuration = new Configuration();
 const apiInstance = new MessagesApi(configuration);
@@ -70,7 +70,7 @@ No authorization required
 import {
     MessagesApi,
     Configuration
-} from 'smoketree';
+} from 'smoketree-ts';
 
 const configuration = new Configuration();
 const apiInstance = new MessagesApi(configuration);
@@ -127,7 +127,7 @@ import {
     MessagesApi,
     Configuration,
     PostMessageCreateRequest
-} from 'smoketree';
+} from 'smoketree-ts';
 
 const configuration = new Configuration();
 const apiInstance = new MessagesApi(configuration);
@@ -178,7 +178,7 @@ No authorization required
 import {
     MessagesApi,
     Configuration
-} from 'smoketree';
+} from 'smoketree-ts';
 
 const configuration = new Configuration();
 const apiInstance = new MessagesApi(configuration);

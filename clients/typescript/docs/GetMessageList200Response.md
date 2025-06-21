@@ -13,7 +13,7 @@ Name | Type | Description | Notes
 ## Example
 
 ```typescript
-import { GetMessageList200Response } from 'smoketree';
+import { GetMessageList200Response } from 'smoketree-ts';
 
 const instance: GetMessageList200Response = {
     messages,

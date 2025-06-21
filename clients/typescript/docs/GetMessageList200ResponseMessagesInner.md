@@ -17,7 +17,7 @@ Name | Type | Description | Notes
 ## Example
 
 ```typescript
-import { GetMessageList200ResponseMessagesInner } from 'smoketree';
+import { GetMessageList200ResponseMessagesInner } from 'smoketree-ts';
 
 const instance: GetMessageList200ResponseMessagesInner = {
     uuid,

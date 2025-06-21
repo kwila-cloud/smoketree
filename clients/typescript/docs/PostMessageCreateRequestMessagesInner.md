@@ -11,7 +11,7 @@ Name | Type | Description | Notes
 ## Example
 
 ```typescript
-import { PostMessageCreateRequestMessagesInner } from 'smoketree';
+import { PostMessageCreateRequestMessagesInner } from 'smoketree-ts';
 
 const instance: PostMessageCreateRequestMessagesInner = {
     to,

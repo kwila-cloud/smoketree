@@ -18,7 +18,7 @@ All URIs are relative to *https://smoketree.kwila.cloud/api/v1*
 import {
     LimitsApi,
     Configuration
-} from 'smoketree';
+} from 'smoketree-ts';
 
 const configuration = new Configuration();
 const apiInstance = new LimitsApi(configuration);
@@ -61,7 +61,7 @@ No authorization required
 import {
     LimitsApi,
     Configuration
-} from 'smoketree';
+} from 'smoketree-ts';
 
 const configuration = new Configuration();
 const apiInstance = new LimitsApi(configuration);
@@ -112,7 +112,7 @@ import {
     LimitsApi,
     Configuration,
     PutLimitsPutRequest
-} from 'smoketree';
+} from 'smoketree-ts';
 
 const configuration = new Configuration();
 const apiInstance = new LimitsApi(configuration);

@@ -1,7 +1,7 @@
 {
-  "name": "smoketree",
+  "name": "smoketree-ts",
   "version": "0.0.1",
-  "description": "OpenAPI client for smoketree",
+  "description": "OpenAPI client for smoketree-ts",
   "author": "OpenAPI-Generator Contributors",
   "repository": {
     "type": "git",
@@ -12,7 +12,7 @@
     "typescript",
     "openapi-client",
     "openapi-generator",
-    "smoketree"
+    "smoketree-ts"
   ],
   "license": "MIT",
   "main": "./dist/index.js",
