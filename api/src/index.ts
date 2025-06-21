@@ -17,6 +17,25 @@ app.use(requireApiKey);
 
 // Setup OpenAPI registry
 const openapi = fromHono(app, {
+	schema: {
+        info: {
+            title: 'Smoketree',
+            version: '0.0.1',
+			contact: {
+                name: 'API Support',
+                url: 'https://kwila.cloud',
+                email: 'support@kwila.cloud',
+            },
+            license: {
+                name: 'MIT',
+                url: 'https://github.com/kwila-cloud/smoketree/blob/main/LICENSE',
+            },
+        },
+        servers: [
+            { url: 'https://smoketree.kwila.cloud/api/v1', description: 'Production server' },
+            { url: 'http://localhost:8787/api/v1', description: 'Development server' },
+        ],
+    },
 	docs_url: "/",
 });
 
