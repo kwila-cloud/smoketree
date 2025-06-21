@@ -1,6 +1,5 @@
 .gitignore
 .npmignore
-README.md
 api.ts
 base.ts
 common.ts
@@ -21,5 +20,4 @@ docs/PutLimitsPutRequest.md
 docs/UsageApi.md
 git_push.sh
 index.ts
-package.json
 tsconfig.json
