@@ -13,12 +13,16 @@ import { scheduled } from "./scheduled";
 const app = new Hono<{ Bindings: Env }>();
 
 
-// Allow CORS from any origin
+// Allow CORS from any origin and handle preflight
 app.use('*', async (c, next) => {
-    await next();
     c.res.headers.set('Access-Control-Allow-Origin', '*');
     c.res.headers.set('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
     c.res.headers.set('Access-Control-Allow-Headers', 'Content-Type, X-API-Key');
+
+    if (c.req.method === 'OPTIONS') {
+        return c.text('', 204);
+    }
+    await next();
 });
 
 // Apply authentication middleware to all routes
