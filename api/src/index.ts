@@ -48,6 +48,17 @@ const openapi = fromHono(app, {
     docs_url: "/",
 });
 
+// Register OpenAPI security scheme
+openapi.registry.registerComponent(
+  'securitySchemes',
+  'ApiKeyAuth',
+  {
+    type: 'apiKey',
+    scheme: 'header',
+    bearerFormat: 'X-API-Key',
+  },
+);
+
 // Register OpenAPI endpoints
 // SMS API endpoints
 openapi.post("/api/v1/messages", MessageCreate);
