@@ -13,7 +13,7 @@ Name | Type | Description | Notes
 ## Example
 
 ```typescript
-import { PostMessageCreate429Response } from 'smoketree';
+import { PostMessageCreate429Response } from 'smoketree-ts';
 
 const instance: PostMessageCreate429Response = {
     error,

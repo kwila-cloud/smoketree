@@ -12,7 +12,7 @@ Name | Type | Description | Notes
 ## Example
 
 ```typescript
-import { GetLimitsGetAll200ResponseInner } from 'smoketree';
+import { GetLimitsGetAll200ResponseInner } from 'smoketree-ts';
 
 const instance: GetLimitsGetAll200ResponseInner = {
     month,

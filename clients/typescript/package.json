@@ -12,7 +12,7 @@
     "typescript",
     "openapi-client",
     "openapi-generator",
-    "smoketree"
+    "smoketree-ts"
   ],
   "license": "MIT",
   "main": "./dist/index.js",

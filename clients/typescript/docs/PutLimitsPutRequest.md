@@ -10,7 +10,7 @@ Name | Type | Description | Notes
 ## Example
 
 ```typescript
-import { PutLimitsPutRequest } from 'smoketree';
+import { PutLimitsPutRequest } from 'smoketree-ts';
 
 const instance: PutLimitsPutRequest = {
     segmentLimit,

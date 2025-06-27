@@ -10,7 +10,7 @@ Name | Type | Description | Notes
 ## Example
 
 ```typescript
-import { PostMessageCreateRequest } from 'smoketree';
+import { PostMessageCreateRequest } from 'smoketree-ts';
 
 const instance: PostMessageCreateRequest = {
     messages,

@@ -13,7 +13,7 @@ Name | Type | Description | Notes
 ## Example
 
 ```typescript
-import { GetUsageStatsGetAll200ResponseInner } from 'smoketree';
+import { GetUsageStatsGetAll200ResponseInner } from 'smoketree-ts';
 
 const instance: GetUsageStatsGetAll200ResponseInner = {
     month,

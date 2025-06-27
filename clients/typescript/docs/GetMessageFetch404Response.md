@@ -10,7 +10,7 @@ Name | Type | Description | Notes
 ## Example
 
 ```typescript
-import { GetMessageFetch404Response } from 'smoketree';
+import { GetMessageFetch404Response } from 'smoketree-ts';
 
 const instance: GetMessageFetch404Response = {
     error,

@@ -18,7 +18,7 @@ Name | Type | Description | Notes
 ## Example
 
 ```typescript
-import { PostMessageCreate200ResponseResultsInner } from 'smoketree';
+import { PostMessageCreate200ResponseResultsInner } from 'smoketree-ts';
 
 const instance: PostMessageCreate200ResponseResultsInner = {
     uuid,
