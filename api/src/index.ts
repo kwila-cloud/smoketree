@@ -38,9 +38,21 @@ const openapi = fromHono(app, {
             { url: 'https://smoketree.kwila.cloud', description: 'Production server' },
             { url: 'http://localhost:8787', description: 'Development server' },
         ],
+        security: [{'ApiKeyAuth': []}]
     },
     docs_url: "/",
 });
+
+// Register OpenAPI security scheme
+openapi.registry.registerComponent(
+  'securitySchemes',
+  'ApiKeyAuth',
+  {
+    type: 'apiKey',
+    in: 'header',
+    name: 'X-API-Key',
+  },
+);
 
 // Register OpenAPI endpoints
 // SMS API endpoints
