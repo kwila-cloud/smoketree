@@ -1,8 +1,8 @@
 {
-  "name": "smoketree",
+  "name": "smoketree-ts",
   "version": "0.0.2",
-  "description": "OpenAPI client for smoketree",
-  "author": "OpenAPI-Generator Contributors",
+  "description": "TypeScript client for Smoketree API",
+  "author": "Kwila Cloud",
   "repository": {
     "type": "git",
     "url": "https://github.com/kwila-cloud/smoketree.git"
