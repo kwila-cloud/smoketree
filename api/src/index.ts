@@ -1,5 +1,6 @@
 import { fromHono } from "chanfana";
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 import { MessageCreate } from "./endpoints/messageCreate";
 import { MessageFetch } from "./endpoints/messageFetch";
 import { MessageRetry } from "./endpoints/messageRetry";
@@ -12,14 +13,7 @@ import { requireApiKey } from "./auth";
 import { scheduled } from "./scheduled";
 const app = new Hono<{ Bindings: Env }>();
 
-
-// Allow CORS from any origin
-app.use('*', async (c, next) => {
-    await next();
-    c.res.headers.set('Access-Control-Allow-Origin', '*');
-    c.res.headers.set('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
-    c.res.headers.set('Access-Control-Allow-Headers', 'Content-Type, X-API-Key');
-});
+app.use(cors());
 
 // Apply authentication middleware to all routes
 app.use(requireApiKey);
