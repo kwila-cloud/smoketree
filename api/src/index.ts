@@ -54,8 +54,8 @@ openapi.registry.registerComponent(
   'ApiKeyAuth',
   {
     type: 'apiKey',
-    scheme: 'header',
-    bearerFormat: 'X-API-Key',
+    in: 'header',
+    name: 'X-API-Key',
   },
 );
 
