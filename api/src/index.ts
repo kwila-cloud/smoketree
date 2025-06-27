@@ -32,8 +32,8 @@ const openapi = fromHono(app, {
             },
         },
         servers: [
-            { url: 'https://smoketree.kwila.cloud/api/v1', description: 'Production server' },
-            { url: 'http://localhost:8787/api/v1', description: 'Development server' },
+            { url: 'https://smoketree.kwila.cloud', description: 'Production server' },
+            { url: 'http://localhost:8787', description: 'Development server' },
         ],
     },
 	docs_url: "/",

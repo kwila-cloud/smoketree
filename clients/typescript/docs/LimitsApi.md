@@ -1,6 +1,6 @@
 # LimitsApi
 
-All URIs are relative to *https://smoketree.kwila.cloud/api/v1*
+All URIs are relative to *https://smoketree.kwila.cloud*
 
 |Method | HTTP request | Description|
 |------------- | ------------- | -------------|
