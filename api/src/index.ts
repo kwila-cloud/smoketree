@@ -12,12 +12,40 @@ import { requireApiKey } from "./auth";
 import { scheduled } from "./scheduled";
 const app = new Hono<{ Bindings: Env }>();
 
+
+// Allow CORS from any origin
+app.use('*', async (c, next) => {
+    await next();
+    c.res.headers.set('Access-Control-Allow-Origin', '*');
+    c.res.headers.set('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+    c.res.headers.set('Access-Control-Allow-Headers', 'Content-Type, X-API-Key');
+});
+
 // Apply authentication middleware to all routes
 app.use(requireApiKey);
 
 // Setup OpenAPI registry
 const openapi = fromHono(app, {
-	docs_url: "/",
+    schema: {
+        info: {
+            title: 'Smoketree',
+            version: '0.0.1',
+            contact: {
+                name: 'API Support',
+                url: 'https://kwila.cloud',
+                email: 'support@kwila.cloud',
+            },
+            license: {
+                name: 'MIT',
+                url: 'https://github.com/kwila-cloud/smoketree/blob/main/LICENSE',
+            },
+        },
+        servers: [
+            { url: 'https://smoketree.kwila.cloud', description: 'Production server' },
+            { url: 'http://localhost:8787', description: 'Development server' },
+        ],
+    },
+    docs_url: "/",
 });
 
 // Register OpenAPI endpoints
@@ -36,6 +64,6 @@ openapi.put("/api/v1/limits/:month", LimitsPut);
 // app.get('/test', (c) => c.text('Hono!'))
 
 export default {
-	fetch: app.fetch,
-	scheduled,
+    fetch: app.fetch,
+    scheduled,
 }
