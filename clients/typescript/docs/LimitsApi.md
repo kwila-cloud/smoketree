@@ -36,7 +36,7 @@ This endpoint does not have any parameters.
 
 ### Authorization
 
-No authorization required
+[ApiKeyAuth](../README.md#ApiKeyAuth)
 
 ### HTTP request headers
 
@@ -86,7 +86,7 @@ const { status, data } = await apiInstance.getLimitsGetByMonth(
 
 ### Authorization
 
-No authorization required
+[ApiKeyAuth](../README.md#ApiKeyAuth)
 
 ### HTTP request headers
 
@@ -140,7 +140,7 @@ const { status, data } = await apiInstance.putLimitsPut(
 
 ### Authorization
 
-No authorization required
+[ApiKeyAuth](../README.md#ApiKeyAuth)
 
 ### HTTP request headers
 
