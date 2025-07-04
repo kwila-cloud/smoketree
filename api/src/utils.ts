@@ -10,13 +10,10 @@ export function getCurrentMonth(): string {
 export async function attemptSendMessage(DB: any, messageUuid: string) {
   // Fetch message info from DB
   const msgRow = await DB.prepare(
-    `SELECT uuid, organization_uuid as organizationUuid, to_number as "to", content, segments, current_status as currentStatus, created_at as createdAt, updated_at as updatedAt FROM message WHERE uuid = ?`
+    `SELECT uuid, organization_uuid as organizationUuid, to_number as "to", content, segments, created_at as createdAt, updated_at as updatedAt FROM message WHERE uuid = ?`
   ).bind(messageUuid).first();
   if (!msgRow) {
     return { error: 'Message not found', uuid: messageUuid };
-  }
-  if (msgRow.currentStatus === 'sent') {
-    return { ...msgRow, error: 'Message already sent' };
   }
   const organizationUuid = msgRow.organizationUuid;
   const createdAt = msgRow.createdAt;
@@ -37,18 +34,14 @@ export async function attemptSendMessage(DB: any, messageUuid: string) {
     ).bind(crypto.randomUUID(), messageUuid, 'rate_limited', 'Rate limited', now).run();
     return {
       ...msgRow,
-      currentStatus: 'rate_limited',
       error: 'Rate limited',
     };
   }
   await DB.prepare(
-    `UPDATE message SET current_status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE uuid = ?`
-  ).bind(messageUuid).run();
-  await DB.prepare(
     `INSERT INTO message_attempt (uuid, message_uuid, status, attempted_at) VALUES (?, ?, ?, ?)`
   ).bind(crypto.randomUUID(), messageUuid, 'pending', now).run();
   const finalMsgRow = await DB.prepare(
-    `SELECT uuid, organization_uuid as organizationUuid, to_number as "to", content, segments, current_status as currentStatus, created_at as createdAt, updated_at as updatedAt FROM message WHERE uuid = ?`
+    `SELECT uuid, organization_uuid as organizationUuid, to_number as "to", content, segments, created_at as createdAt, updated_at as updatedAt FROM message WHERE uuid = ?`
   ).bind(messageUuid).first();
   return finalMsgRow;
 }

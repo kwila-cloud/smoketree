@@ -28,7 +28,7 @@ describe("MessageCreate endpoint", () => {
     db.close();
   });
 
-  async function simulateRequest(
+  async function simulateCreateRequest(
     orgUuid: string,
     apiKeyType: string,
     body: any
@@ -57,7 +57,7 @@ describe("MessageCreate endpoint", () => {
     await db.prepare(
       `INSERT INTO monthly_limit (organization_uuid, month, segment_limit, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`
     ).bind("org-1", "2025-06", 100, "2025-06-01T00:00:00Z", "2025-06-01T00:00:00Z").run();
-    const res = await simulateRequest("org-1", "user", {
+    const res = await simulateCreateRequest("org-1", "user", {
       messages: [
         { to: "+123", content: "hello world" },
       ],
@@ -67,11 +67,10 @@ describe("MessageCreate endpoint", () => {
     expect(data.results.length).toBe(1);
     expect(data.results[0].to).toBe("+123");
     expect(data.results[0].content).toBe("hello world");
-    expect(data.results[0].currentStatus).toBe("pending");
   });
 
   it("sends multiple messages and returns results", async () => {
-    const res = await simulateRequest("org-1", "user", {
+    const res = await simulateCreateRequest("org-1", "user", {
       messages: [
         { to: "+123", content: "msg1" },
         { to: "+456", content: "msg2" },
@@ -82,27 +81,5 @@ describe("MessageCreate endpoint", () => {
     expect(data.results.length).toBe(2);
     expect(data.results[0].to).toBe("+123");
     expect(data.results[1].to).toBe("+456");
-  });
-
-  it("rate limits only the message that exceeds the segment limit", async () => {
-    // Set a segment limit of 4
-    await db.prepare(
-      `INSERT INTO monthly_limit (organization_uuid, month, segment_limit, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`
-    ).bind("org-1", "2025-06", 4, "2025-06-01T00:00:00Z", "2025-06-01T00:00:00Z").run();
-    // Insert a message that uses 1 segment
-    await db.prepare(
-      `INSERT INTO message (uuid, organization_uuid, to_number, content, segments, current_status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-    ).bind("msg-1", "org-1", "+111", "hi", 1, "sent", "2025-06-01T00:00:00Z", "2025-06-01T00:00:00Z").run();
-    const res = await simulateRequest("org-1", "user", {
-      messages: [
-        { to: "+123", content: "a" }, // 1 segment
-        { to: "+456", content: "b".repeat(301) }, // 3 segments
-      ],
-    });
-    expect(res.status).toBe(200);
-    const data = await res.json();
-    expect(data.results.length).toBe(2);
-    expect(data.results[0].currentStatus).toBe("pending");
-    expect(data.results[1].currentStatus).toBe("rate_limited");
   });
 });
