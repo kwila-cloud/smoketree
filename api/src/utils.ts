@@ -51,7 +51,7 @@ export async function attemptSendMessage(DB: any, messageUuid: string) {
         crypto.randomUUID(),
         messageUuid,
         "rate_limited",
-        "Rate limited",
+        `Rate limited (used: $used, limit: $segmentLimit)`,
         now,
       )
       .run();
