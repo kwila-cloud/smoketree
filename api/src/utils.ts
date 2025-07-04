@@ -32,10 +32,7 @@ export async function attemptSendMessage(DB: any, messageUuid: string) {
     await DB.prepare(
       `INSERT INTO message_attempt (uuid, message_uuid, status, error_message, attempted_at) VALUES (?, ?, ?, ?, ?)`
     ).bind(crypto.randomUUID(), messageUuid, 'rate_limited', 'Rate limited', now).run();
-    return {
-      ...msgRow,
-      error: 'Rate limited',
-    };
+    return msgRow;
   }
   await DB.prepare(
     `INSERT INTO message_attempt (uuid, message_uuid, status, attempted_at) VALUES (?, ?, ?, ?)`
