@@ -50,31 +50,38 @@ export class MessageList extends OpenAPIRoute {
     offset = Number(offset) || 0;
 
     // Build query parts
-    let where = "WHERE organization_uuid = ?";
+    let where = "WHERE organizationUuid = ?";
     let params: any[] = [organization.uuid];
     if (status) {
-      where += " AND current_status = ?";
+      where += " AND currentStatus = ?";
       params.push(status);
     }
 
-    // Get total count
-    const totalRow = await DB.prepare(
-      `SELECT COUNT(*) as total FROM message ${where}`
-    ).bind(...params).first();
-    const total = totalRow ? totalRow.total : 0;
-
-    // Get paginated messages
+    // Get paginated messages with latest status from message_attempt
     const rows = await DB.prepare(
-      `SELECT uuid, organization_uuid as organizationUuid, to_number as "to", content, segments, current_status as currentStatus, created_at as createdAt, updated_at as updatedAt
-       FROM message
+      `SELECT m.uuid,
+              m.organization_uuid as organizationUuid,
+              m.to_number as "to",
+              m.content,
+              m.segments,
+              m.created_at as createdAt,
+              m.updated_at as updatedAt,
+              (
+                SELECT status
+                FROM message_attempt ma
+                WHERE ma.message_uuid = m.uuid
+                ORDER BY attempted_at DESC
+                LIMIT 1
+              ) as currentStatus
+       FROM message m
        ${where}
-       ORDER BY created_at DESC
+       ORDER BY createdAt DESC
        LIMIT ? OFFSET ?`
     ).bind(...params, limit, offset).all();
 
     return c.json({
       messages: rows.results,
-      total,
+      total: rows.results.length,
       limit,
       offset,
     });

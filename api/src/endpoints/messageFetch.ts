@@ -47,15 +47,31 @@ export class MessageFetch extends OpenAPIRoute {
     const data = await this.getValidatedData<typeof this.schema>();
     const { messageUuid } = data.params;
 
-    // Fetch the message for this organization
+
+  
     const row = await DB.prepare(
-      `SELECT uuid, organization_uuid as organizationUuid, to_number as "to", content, segments, current_status as currentStatus, created_at as createdAt, updated_at as updatedAt
-       FROM message WHERE uuid = ? AND organization_uuid = ?`
+      `SELECT m.uuid,
+              m.organization_uuid as organizationUuid,
+              m.to_number as "to",
+              m.content,
+              m.segments,
+              m.created_at as createdAt,
+              m.updated_at as updatedAt,
+              (
+                SELECT status
+                FROM message_attempt ma
+                WHERE ma.message_uuid = m.uuid
+                ORDER BY attempted_at DESC
+                LIMIT 1
+              ) as currentStatus
+       FROM message m
+       WHERE m.uuid = ? AND m.organization_uuid = ?`
     ).bind(messageUuid, organization.uuid).first();
 
     if (!row) {
       return c.json({ error: "Message not found" }, 404);
     }
+
     return c.json(row);
   }
 }
