@@ -43,29 +43,24 @@ export async function attemptSendMessage(DB: any, messageUuid: string) {
     .bind(organizationUuid, month)
     .first();
   const segmentLimit = limitRow ? limitRow.segmentLimit : 0;
+  const attemptUuid = crypto.randomUUID();
   if (used > segmentLimit) {
     await DB.prepare(
-      `INSERT INTO message_attempt (uuid, message_uuid, status, error_message, attempted_at) VALUES (?, ?, ?, ?, ?)`,
+      `INSERT INTO message_attempt (uuid, message_uuid, status, error_message, attempted_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)`,
     )
       .bind(
-        crypto.randomUUID(),
+        attemptUuid,
         messageUuid,
         "rate_limited",
         `Rate limited (used: $used, limit: $segmentLimit)`,
-        now,
       )
       .run();
-    return msgRow;
+    return {...msgRow, attemptUuid};
   }
   await DB.prepare(
-    `INSERT INTO message_attempt (uuid, message_uuid, status, attempted_at) VALUES (?, ?, ?, ?)`,
+    `INSERT INTO message_attempt (uuid, message_uuid, status, attempted_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)`,
   )
-    .bind(crypto.randomUUID(), messageUuid, "pending", now)
+    .bind(attemptUuid, messageUuid, "pending")
     .run();
-  const finalMsgRow = await DB.prepare(
-    `SELECT uuid, organization_uuid as organizationUuid, to_number as "to", content, segments, created_at as createdAt, updated_at as updatedAt FROM message WHERE uuid = ?`,
-  )
-    .bind(messageUuid)
-    .first();
-  return finalMsgRow;
+  return {...msgRow, attemptUuid};
 }
