@@ -75,10 +75,8 @@ describe('attemptSendMessage', () => {
       to: '123',
       content: 'hello',
       segments: 1,
-      currentStatus: 'sent',
       createdAt: NOW,
       updatedAt: NOW,
-      error: 'Message already sent'
     });
   });
 
@@ -101,9 +99,7 @@ describe('attemptSendMessage', () => {
       uuid: 'msg-2',
       organizationUuid: ORG_UUID,
       createdAt: NOW,
-      currentStatus: 'rate_limited',
       segments: 15,
-      error: 'Rate limited',
       content: 'content2',
       to: '123',
       updatedAt: NOW,
@@ -132,7 +128,6 @@ describe('attemptSendMessage', () => {
       to: '123',
       content: 'hello',
       segments: 10,
-      currentStatus: 'pending',
       createdAt: NOW,
       updatedAt: expect.any(String), // updated_at will be CURRENT_TIMESTAMP
     });
@@ -159,16 +154,14 @@ describe('attemptSendMessage', () => {
       uuid: MESSAGE_UUID,
       organizationUuid: ORG_UUID,
       createdAt: NOW,
-      currentStatus: 'rate_limited',
       segments: 1,
-      error: 'Rate limited',
       content: 'hello',
       to: '123',
       updatedAt: NOW,
     });
 
     // Verify message attempt was recorded
-    const attempt = await db.prepare(`SELECT status, error_message FROM message_attempt WHERE message_uuid = ?`).bind(MESSAGE_UUID).first();
-    expect(attempt).toEqual({ status: 'rate_limited', error_message: 'Rate limited' });
+    const attempt = await db.prepare(`SELECT status FROM message_attempt WHERE message_uuid = ? ORDER BY attempted_at DESC`).bind(MESSAGE_UUID).first();
+    expect(attempt).toEqual({ status: 'rate_limited' });
   });
 });

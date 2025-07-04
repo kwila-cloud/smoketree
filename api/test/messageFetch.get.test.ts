@@ -56,7 +56,6 @@ describe("MessageFetch endpoint", () => {
     expect(data.to).toBe("+123");
     expect(data.content).toBe("hi");
     expect(data.segments).toBe(2);
-    expect(data.currentStatus).toBe("sent");
   });
 
   it("returns 404 if the message does not exist", async () => {
