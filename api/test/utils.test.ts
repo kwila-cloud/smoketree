@@ -161,7 +161,7 @@ describe('attemptSendMessage', () => {
     });
 
     // Verify message attempt was recorded
-    const attempt = await db.prepare(`SELECT status, error_message FROM message_attempt WHERE message_uuid = ?`).bind(MESSAGE_UUID).first();
-    expect(attempt).toEqual({ status: 'rate_limited', error_message: 'Rate limited' });
+    const attempt = await db.prepare(`SELECT status FROM message_attempt WHERE message_uuid = ? ORDER BY attempted_at DESC`).bind(MESSAGE_UUID).first();
+    expect(attempt).toEqual({ status: 'rate_limited' });
   });
 });

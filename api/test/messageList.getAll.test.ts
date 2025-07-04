@@ -70,8 +70,30 @@ describe("MessageList endpoint", () => {
       `INSERT INTO message (uuid, organization_uuid, to_number, content, segments, current_status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
     ).bind("msg-1", "org-1", "+123", "hi", 2, "sent", "2025-06-01T00:00:00Z", "2025-06-01T00:00:00Z").run();
     await db.prepare(
+      `INSERT INTO message_attempt (uuid, message_uuid, status, error_message, attempted_at) VALUES (?, ?, ?, ?, ?)`,
+    )
+      .bind(
+        crypto.randomUUID(),
+        "msg-1",
+        "sent",
+        "",
+        "2025-06-01T00:00:00Z",
+      )
+      .run();
+    await db.prepare(
       `INSERT INTO message (uuid, organization_uuid, to_number, content, segments, current_status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
     ).bind("msg-2", "org-1", "+456", "yo", 1, "failed", "2025-06-02T00:00:00Z", "2025-06-02T00:00:00Z").run();
+    await db.prepare(
+      `INSERT INTO message_attempt (uuid, message_uuid, status, error_message, attempted_at) VALUES (?, ?, ?, ?, ?)`,
+    )
+      .bind(
+        crypto.randomUUID(),
+        "msg-2",
+        "failed",
+        "",
+        "2025-06-01T00:00:00Z",
+      )
+      .run();
 
     const res = await simulateRequest("org-1", "user", { status: "failed" });
     const data = await res.json();
