@@ -1,6 +1,6 @@
 {
   "name": "smoketree-ts",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "TypeScript client for Smoketree API",
   "author": "Kwila Cloud",
   "repository": {
