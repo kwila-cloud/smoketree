@@ -1,6 +1,6 @@
 {
   "name": "smoketree-ts",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "TypeScript client for Smoketree API",
   "author": "Kwila Cloud",
   "repository": {
@@ -22,7 +22,7 @@
     "prepare": "npm run build"
   },
   "dependencies": {
-    "axios": "^1.6.1"
+    "axios": "^1.11.0"
   },
   "devDependencies": {
     "@types/node": "12.11.5 - 12.20.42",
