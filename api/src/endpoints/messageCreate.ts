@@ -59,16 +59,31 @@ export class MessageCreate extends OpenAPIRoute {
     const { DB } = c.env;
     const data = await this.getValidatedData<typeof this.schema>();
     const { messages } = data.body;
-    const results = [];
-    for (const msg of messages) {
-      const messageUuid = crypto.randomUUID();
-      // We include the estimated segments in the message creation, to avoid the user creating a bunch of messages that would exceed their limit.
-      await DB.prepare(
-        `INSERT INTO message (uuid, organization_uuid, to_number, content, segments, current_status) VALUES (?, ?, ?, ?, ?, ?)`
-      ).bind(messageUuid, organization.uuid, msg.to, msg.content, estimateSegments(msg.content), 'pending').run();
-      const result = await attemptSendMessage(DB, messageUuid);
-      results.push(result);
-    }
+
+    const inserts = messages.map(msg => ({
+      uuid: crypto.randomUUID(),
+      organization_uuid: organization.uuid,
+      to_number: msg.to,
+      content: msg.content,
+      segments: estimateSegments(msg.content),
+      current_status: 'pending',
+    }));
+
+    const insertStmt = DB.prepare(
+      `INSERT INTO message (uuid, organization_uuid, to_number, content, segments, current_status) VALUES (?, ?, ?, ?, ?, ?)`
+    );
+
+    const batch = DB.batch(inserts.map(i => insertStmt.bind(i.uuid, i.organization_uuid, i.to_number, i.content, i.segments, i.current_status)));
+
+    await batch; // Execute the batch insert
+
+    // Parallelize adding the message attempts
+    const results = await Promise.all(
+      inserts.map(async (insert) => {
+        return await attemptSendMessage(DB, insert.uuid);
+      })
+    );
+
     return c.json({ results });
   }
 }
