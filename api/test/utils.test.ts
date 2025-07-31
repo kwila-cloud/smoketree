@@ -92,6 +92,17 @@ describe('attemptSendMessage', () => {
       `INSERT INTO message (uuid, organization_uuid, to_number, content, segments, current_status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
     ).bind('msg-1', ORG_UUID, '123', 'content1', 40, 'sent', NOW, NOW).run();
     await db.prepare(
+      `INSERT INTO message_attempt (uuid, message_uuid, status, error_message, attempted_at) VALUES (?, ?, ?, ?, ?)`,
+    )
+      .bind(
+        "msg-1-attempt",
+        "msg-1",
+        "sent",
+        "",
+        NOW,
+      )
+      .run();
+    await db.prepare(
       `INSERT INTO message (uuid, organization_uuid, to_number, content, segments, current_status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
     ).bind('msg-2', ORG_UUID, '123', 'content2', 15, 'pending', NOW, NOW).run(); // This one will be rate-limited
 
@@ -109,7 +120,7 @@ describe('attemptSendMessage', () => {
 
     // Verify message attempt was recorded
     const attempt = await db.prepare(`SELECT status, error_message FROM message_attempt WHERE message_uuid = ?`).bind('msg-2').first();
-    expect(attempt).toEqual({ status: 'rate_limited', error_message: 'Rate limited (used: 55, limit: 50)' });
+    expect(attempt).toEqual({ status: 'rate_limited', error_message: 'Rate limited (used: 40, estimated addition: 15, limit: 50)' });
   });
 
   test('should successfully update message status and insert message attempt', async () => {
