@@ -52,7 +52,7 @@ export async function attemptSendMessage(DB: any, messageUuid: string) {
         attemptUuid,
         messageUuid,
         "rate_limited",
-        `Rate limited (used: $used, limit: $segmentLimit)`,
+        `Rate limited (used: ${used}, limit: ${segmentLimit})`,
       )
       .run();
     return {...msgRow, attemptUuid};

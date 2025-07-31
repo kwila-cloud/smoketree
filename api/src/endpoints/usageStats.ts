@@ -30,11 +30,12 @@ export class UsageStatsGetAll extends OpenAPIRoute {
     // Query usage stats grouped by month (YYYY-MM)
     const rows = await DB.prepare(
       `SELECT 
-        strftime('%Y-%m', created_at) as month,
-        COUNT(*) as totalMessages,
-        COALESCE(SUM(COALESCE(segments, 0)), 0) as totalSegments
-      FROM message
-      WHERE organization_uuid = ?
+        strftime('%Y-%m', m.created_at) as month,
+        COUNT(m.uuid) as totalMessages,
+        COALESCE(SUM(COALESCE(m.segments, 0)), 0) as totalSegments
+      FROM message m
+      WHERE m.organization_uuid = ?
+      AND (SELECT status FROM message_attempt WHERE message_uuid = m.uuid ORDER BY attempted_at DESC LIMIT 1) = 'sent'
       GROUP BY month
       ORDER BY month DESC`
     ).bind(organization.uuid).all();
@@ -97,11 +98,12 @@ export class UsageStatsGetByMonth extends OpenAPIRoute {
     // Query usage stats for the given month (YYYY-MM)
     const row = await DB.prepare(
       `SELECT 
-        strftime('%Y-%m', created_at) as month,
-        COUNT(*) as totalMessages,
-        COALESCE(SUM(COALESCE(segments, 0)), 0) as totalSegments
-      FROM message
-      WHERE organization_uuid = ? AND strftime('%Y-%m', created_at) = ?`
+        strftime('%Y-%m', m.created_at) as month,
+        COUNT(m.uuid) as totalMessages,
+        COALESCE(SUM(COALESCE(m.segments, 0)), 0) as totalSegments
+      FROM message m
+      WHERE m.organization_uuid = ? AND strftime('%Y-%m', m.created_at) = ?
+      AND (SELECT status FROM message_attempt WHERE message_uuid = m.uuid ORDER BY attempted_at DESC LIMIT 1) = 'sent'`
     ).bind(organization.uuid, month).first();
 
     // Get segment limit for the month
