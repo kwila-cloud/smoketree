@@ -154,4 +154,69 @@ describe("UsageStatsGetAll endpoint", () => {
     ]);
     expect(res2.status).toBe(200);
   });
+
+  it("only counts messages with 'sent' message attempts", async () => {
+    // Insert a message
+    await db.prepare(
+      `INSERT INTO message (uuid, organization_uuid, to_number, content, segments, current_status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind("msg-1", "org-1", "+123", "hi", 2, "sent", "2025-06-01T00:00:00Z", "2025-06-01T00:00:00Z").run();
+
+    // Insert message attempts with different statuses
+    await db.prepare(
+      `INSERT INTO message_attempt (uuid, message_uuid, status, error_message, attempted_at) VALUES (?, ?, ?, ?, ?)`,
+    )
+      .bind(
+        crypto.randomUUID(),
+        "msg-1",
+        "pending",
+        "",
+        "2025-06-01T00:00:00Z",
+      )
+      .run();
+    await db.prepare(
+      `INSERT INTO message_attempt (uuid, message_uuid, status, error_message, attempted_at) VALUES (?, ?, ?, ?, ?)`,
+    )
+      .bind(
+        crypto.randomUUID(),
+        "msg-1",
+        "failed",
+        "",
+        "2025-06-02T00:00:00Z",
+      )
+      .run();
+    await db.prepare(
+      `INSERT INTO message_attempt (uuid, message_uuid, status, error_message, attempted_at) VALUES (?, ?, ?, ?, ?)`,
+    )
+      .bind(
+        crypto.randomUUID(),
+        "msg-1",
+        "rate_limited",
+        "",
+        "2025-06-03T00:00:00Z",
+      )
+      .run();
+    await db.prepare(
+      `INSERT INTO message_attempt (uuid, message_uuid, status, error_message, attempted_at) VALUES (?, ?, ?, ?, ?)`,
+    )
+      .bind(
+        crypto.randomUUID(),
+        crypto.randomUUID(),
+        "sent",
+        "",
+        "2025-06-04T00:00:00Z",
+      )
+      .run();
+
+    // Insert monthly limit
+    await db.prepare(
+      `INSERT INTO monthly_limit (organization_uuid, month, segment_limit, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`
+    ).bind("org-1", "2025-06", 100, "2025-06-01T00:00:00Z", "2025-06-01T00:00:00Z").run();
+
+    const res = await simulateRequest("org-1", "user");
+    const data = await res.json();
+    expect(data).toEqual([
+      { month: "2025-06", totalMessages: 1, totalSegments: 2, segmentLimit: 100 },
+    ]);
+    expect(res.status).toBe(200);
+  });
 });
