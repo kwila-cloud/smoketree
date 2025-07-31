@@ -52,6 +52,29 @@ describe("UsageStatsGetAll endpoint", () => {
     await db.prepare(
       `INSERT INTO message (uuid, organization_uuid, to_number, content, segments, current_status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
     ).bind("msg-2", "org-1", "+123", "yo", 1, "sent", "2025-05-01T00:00:00Z", "2025-05-01T00:00:00Z").run();
+    // Insert successful message attmempts
+    await db.prepare(
+      `INSERT INTO message_attempt (uuid, message_uuid, status, error_message, attempted_at) VALUES (?, ?, ?, ?, ?)`,
+    )
+      .bind(
+        crypto.randomUUID(),
+        "msg-1",
+        "sent",
+        "",
+        "2025-06-01T00:00:00Z",
+      )
+      .run();
+    await db.prepare(
+      `INSERT INTO message_attempt (uuid, message_uuid, status, error_message, attempted_at) VALUES (?, ?, ?, ?, ?)`,
+    )
+      .bind(
+        crypto.randomUUID(),
+        "msg-2",
+        "sent",
+        "",
+        "2025-06-01T00:00:00Z",
+      )
+      .run();
     // Insert monthly limits
     await db.prepare(
       `INSERT INTO monthly_limit (organization_uuid, month, segment_limit, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`
@@ -84,6 +107,29 @@ describe("UsageStatsGetAll endpoint", () => {
     await db.prepare(
       `INSERT INTO message (uuid, organization_uuid, to_number, content, segments, current_status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
     ).bind("msg-2", "org-2", "+456", "yo", 3, "sent", "2025-06-01T00:00:00Z", "2025-06-01T00:00:00Z").run();
+    // Insert successful message attmempts
+    await db.prepare(
+      `INSERT INTO message_attempt (uuid, message_uuid, status, error_message, attempted_at) VALUES (?, ?, ?, ?, ?)`,
+    )
+      .bind(
+        crypto.randomUUID(),
+        "msg-1",
+        "sent",
+        "",
+        "2025-06-01T00:00:00Z",
+      )
+      .run();
+    await db.prepare(
+      `INSERT INTO message_attempt (uuid, message_uuid, status, error_message, attempted_at) VALUES (?, ?, ?, ?, ?)`,
+    )
+      .bind(
+        crypto.randomUUID(),
+        "msg-2",
+        "sent",
+        "",
+        "2025-06-01T00:00:00Z",
+      )
+      .run();
     // Insert monthly limits for both orgs
     await db.prepare(
       `INSERT INTO monthly_limit (organization_uuid, month, segment_limit, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`

@@ -77,6 +77,7 @@ describe('attemptSendMessage', () => {
       segments: 1,
       createdAt: NOW,
       updatedAt: NOW,
+      attemptUuid: "mock-uuid"
     });
   });
 
@@ -103,11 +104,12 @@ describe('attemptSendMessage', () => {
       content: 'content2',
       to: '123',
       updatedAt: NOW,
+      attemptUuid: "mock-uuid",
     });
 
     // Verify message attempt was recorded
     const attempt = await db.prepare(`SELECT status, error_message FROM message_attempt WHERE message_uuid = ?`).bind('msg-2').first();
-    expect(attempt).toEqual({ status: 'rate_limited', error_message: 'Rate limited' });
+    expect(attempt).toEqual({ status: 'rate_limited', error_message: 'Rate limited (used: 55, limit: 50)' });
   });
 
   test('should successfully update message status and insert message attempt', async () => {
@@ -130,6 +132,7 @@ describe('attemptSendMessage', () => {
       segments: 10,
       createdAt: NOW,
       updatedAt: expect.any(String), // updated_at will be CURRENT_TIMESTAMP
+      attemptUuid: "mock-uuid",
     });
 
     // Verify message status was updated
@@ -158,6 +161,7 @@ describe('attemptSendMessage', () => {
       content: 'hello',
       to: '123',
       updatedAt: NOW,
+      attemptUuid: "mock-uuid",
     });
 
     // Verify message attempt was recorded
