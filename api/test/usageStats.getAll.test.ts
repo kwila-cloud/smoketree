@@ -157,23 +157,18 @@ describe("UsageStatsGetAll endpoint", () => {
 
   it("only counts messages with 'sent' message attempts", async () => {
     // Insert a message
-    const messageUuid1 = "msg-1";
-    const messageUuid2 = "msg-2";
-    const messageUuid3 = "msg-3";
-    const messageUuid4 = "msg-4";
-
     await db.prepare(
       `INSERT INTO message (uuid, organization_uuid, to_number, content, segments, current_status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-    ).bind(messageUuid1, "org-1", "+123", "hi", 2, "sent", "2025-06-01T00:00:00Z", "2025-06-01T00:00:00Z").run();
+    ).bind("msg-1", "org-1", "+123", "hi", 2, "sent", "2025-06-01T00:00:00Z", "2025-06-01T00:00:00Z").run();
     await db.prepare(
       `INSERT INTO message (uuid, organization_uuid, to_number, content, segments, current_status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-    ).bind(messageUuid2, "org-1", "+123", "hi", 2, "sent", "2025-06-01T00:00:00Z", "2025-06-01T00:00:00Z").run();
+    ).bind("msg-2", "org-1", "+123", "hi", 2, "sent", "2025-06-01T00:00:00Z", "2025-06-01T00:00:00Z").run();
     await db.prepare(
       `INSERT INTO message (uuid, organization_uuid, to_number, content, segments, current_status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-    ).bind(messageUuid3, "org-1", "+123", "hi", 2, "sent", "2025-06-01T00:00:00Z", "2025-06-01T00:00:00Z").run();
+    ).bind("msg-3", "org-1", "+123", "hi", 2, "sent", "2025-06-01T00:00:00Z", "2025-06-01T00:00:00Z").run();
     await db.prepare(
       `INSERT INTO message (uuid, organization_uuid, to_number, content, segments, current_status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-    ).bind(messageUuid4, "org-1", "+123", "hi", 2, "sent", "2025-06-01T00:00:00Z", "2025-06-01T00:00:00Z").run();
+    ).bind("msg-4", "org-1", "+123", "hi", 2, "sent", "2025-06-01T00:00:00Z", "2025-06-01T00:00:00Z").run();
 
     // Insert message attempts with different statuses
     await db.prepare(
@@ -181,7 +176,7 @@ describe("UsageStatsGetAll endpoint", () => {
     )
       .bind(
         crypto.randomUUID(),
-        messageUuid1,
+        "msg-1",
         "pending",
         "",
         "2025-06-01T00:00:00Z",
@@ -192,7 +187,7 @@ describe("UsageStatsGetAll endpoint", () => {
     )
       .bind(
         crypto.randomUUID(),
-        messageUuid2,
+        "msg-2",
         "failed",
         "",
         "2025-06-02T00:00:00Z",
@@ -203,7 +198,7 @@ describe("UsageStatsGetAll endpoint", () => {
     )
       .bind(
         crypto.randomUUID(),
-        messageUuid3,
+        "msg-3",
         "rate_limited",
         "",
         "2025-06-03T00:00:00Z",
@@ -214,7 +209,7 @@ describe("UsageStatsGetAll endpoint", () => {
     )
       .bind(
         crypto.randomUUID(),
-        messageUuid4,
+        "msg-4",
         "sent",
         "",
         "2025-06-04T00:00:00Z",
