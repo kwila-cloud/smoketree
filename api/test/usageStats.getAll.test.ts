@@ -159,16 +159,16 @@ describe("UsageStatsGetAll endpoint", () => {
     // Insert a message
     await db.prepare(
       `INSERT INTO message (uuid, organization_uuid, to_number, content, segments, current_status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-    ).bind("msg-1", "org-1", "+123", "hi", 2, "sent", "2025-06-01T00:00:00Z", "2025-06-01T00:00:00Z").run();
+    ).bind("msg-1", "org-1", "+123", "hi", 1, "sent", "2025-06-01T00:00:00Z", "2025-06-01T00:00:00Z").run();
     await db.prepare(
       `INSERT INTO message (uuid, organization_uuid, to_number, content, segments, current_status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-    ).bind("msg-2", "org-1", "+123", "hi", 2, "sent", "2025-06-01T00:00:00Z", "2025-06-01T00:00:00Z").run();
+    ).bind("msg-2", "org-1", "+123", "hi", 1, "sent", "2025-06-01T00:00:00Z", "2025-06-01T00:00:00Z").run();
     await db.prepare(
       `INSERT INTO message (uuid, organization_uuid, to_number, content, segments, current_status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-    ).bind("msg-3", "org-1", "+123", "hi", 2, "sent", "2025-06-01T00:00:00Z", "2025-06-01T00:00:00Z").run();
+    ).bind("msg-3", "org-1", "+123", "hi", 1, "sent", "2025-06-01T00:00:00Z", "2025-06-01T00:00:00Z").run();
     await db.prepare(
       `INSERT INTO message (uuid, organization_uuid, to_number, content, segments, current_status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-    ).bind("msg-4", "org-1", "+123", "hi", 2, "sent", "2025-06-01T00:00:00Z", "2025-06-01T00:00:00Z").run();
+    ).bind("msg-4", "org-1", "+123", "hi", 1, "sent", "2025-06-01T00:00:00Z", "2025-06-01T00:00:00Z").run();
 
     // Insert message attempts with different statuses
     await db.prepare(
@@ -224,7 +224,7 @@ describe("UsageStatsGetAll endpoint", () => {
     const res = await simulateRequest("org-1", "user");
     const data = await res.json();
     expect(data).toEqual([
-      { month: "2025-06", totalMessages: 1, totalSegments: 2, segmentLimit: 100 },
+      { month: "2025-06", totalMessages: 1, totalSegments: 1, segmentLimit: 100 },
     ]);
     expect(res.status).toBe(200);
   });
