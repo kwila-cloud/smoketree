@@ -44,6 +44,11 @@ export function createTestDb() {
         insertUserKey.run(`${uuid}-user`, 'user', uuid);
       }
     },
+    batch: async (statements: any[]) => {
+      for (const statement of statements) {
+        await statement.run();
+      }
+    },
     dump: () => db.dump(),
     close: () => db.close(),
   };
