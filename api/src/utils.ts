@@ -32,11 +32,12 @@ export async function attemptSendMessage(DB: any, messageUuid: string) {
   const now = new Date().toISOString();
   // Check monthly segment limit
   const usageRow = await DB.prepare(
-    `SELECT COALESCE(SUM(COALESCE(segments, 0)), 0) as used FROM message WHERE organization_uuid = ? AND strftime('%Y-%m', created_at) = ?`,
+    `SELECT COALESCE(SUM(COALESCE(segments, 0)), 0) as used FROM message WHERE organization_uuid = ? AND strftime('%Y-%m', created_at) = ? AND (SELECT status FROM message_attempt WHERE message_uuid = message.uuid ORDER BY attempted_at DESC LIMIT 1) = 'sent'`,
   )
     .bind(organizationUuid, month)
     .first();
   const used = usageRow ? usageRow.used : 0;
+  const estimatedAddition = msgRow.segments;
   const limitRow = await DB.prepare(
     `SELECT segment_limit as segmentLimit FROM monthly_limit WHERE organization_uuid = ? AND month = ?`,
   )
@@ -44,7 +45,7 @@ export async function attemptSendMessage(DB: any, messageUuid: string) {
     .first();
   const segmentLimit = limitRow ? limitRow.segmentLimit : 0;
   const attemptUuid = crypto.randomUUID();
-  if (used > segmentLimit) {
+  if (used + estimatedAddition > segmentLimit) {
     await DB.prepare(
       `INSERT INTO message_attempt (uuid, message_uuid, status, error_message, attempted_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)`,
     )
@@ -52,7 +53,7 @@ export async function attemptSendMessage(DB: any, messageUuid: string) {
         attemptUuid,
         messageUuid,
         "rate_limited",
-        `Rate limited (used: ${used}, limit: ${segmentLimit})`,
+        `Rate limited (used: ${used}, estimated addition: ${estimatedAddition}, limit: ${segmentLimit})`,
       )
       .run();
     return {...msgRow, attemptUuid};
