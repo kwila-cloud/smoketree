@@ -149,4 +149,81 @@ describe("UsageStatsGetByMonth endpoint", () => {
       segmentLimit: 200,
     });
   });
+
+  it("only counts messages with 'sent' message attempts", async () => {
+    // Insert messages
+    await db.prepare(
+      `INSERT INTO message (uuid, organization_uuid, to_number, content, segments, current_status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind("msg-1", "org-1", "+123", "hi", 1, "sent", "2025-06-01T00:00:00Z", "2025-06-01T00:00:00Z").run();
+    await db.prepare(
+      `INSERT INTO message (uuid, organization_uuid, to_number, content, segments, current_status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind("msg-2", "org-1", "+123", "hi", 1, "sent", "2025-06-01T00:00:00Z", "2025-06-01T00:00:00Z").run();
+    await db.prepare(
+      `INSERT INTO message (uuid, organization_uuid, to_number, content, segments, current_status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind("msg-3", "org-1", "+123", "hi", 1, "sent", "2025-06-01T00:00:00Z", "2025-06-01T00:00:00Z").run();
+    await db.prepare(
+      `INSERT INTO message (uuid, organization_uuid, to_number, content, segments, current_status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind("msg-4", "org-1", "+123", "hi", 1, "sent", "2025-06-01T00:00:00Z", "2025-06-01T00:00:00Z").run();
+
+    // Insert message attempts with different statuses
+    await db.prepare(
+      `INSERT INTO message_attempt (uuid, message_uuid, status, error_message, attempted_at) VALUES (?, ?, ?, ?, ?)`,
+    )
+      .bind(
+        crypto.randomUUID(),
+        "msg-1",
+        "pending",
+        "",
+        "2025-06-01T00:00:00Z",
+      )
+      .run();
+    await db.prepare(
+      `INSERT INTO message_attempt (uuid, message_uuid, status, error_message, attempted_at) VALUES (?, ?, ?, ?, ?)`,
+    )
+      .bind(
+        crypto.randomUUID(),
+        "msg-2",
+        "failed",
+        "",
+        "2025-06-02T00:00:00Z",
+      )
+      .run();
+    await db.prepare(
+      `INSERT INTO message_attempt (uuid, message_uuid, status, error_message, attempted_at) VALUES (?, ?, ?, ?, ?)`,
+    )
+      .bind(
+        crypto.randomUUID(),
+        "msg-3",
+        "rate_limited",
+        "",
+        "2025-06-03T00:00:00Z",
+      )
+      .run();
+    await db.prepare(
+      `INSERT INTO message_attempt (uuid, message_uuid, status, error_message, attempted_at) VALUES (?, ?, ?, ?, ?)`,
+    )
+      .bind(
+        crypto.randomUUID(),
+        "msg-4",
+        "sent",
+        "",
+        "2025-06-04T00:00:00Z",
+      )
+      .run();
+
+    // Insert monthly limit
+    await db.prepare(
+      `INSERT INTO monthly_limit (organization_uuid, month, segment_limit, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`
+    ).bind("org-1", "2025-06", 100, "2025-06-01T00:00:00Z", "2025-06-01T00:00:00Z").run();
+
+    const res = await simulateRequest("org-1", "user", "2025-06");
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data).toEqual({
+      month: "2025-06",
+      totalMessages: 1,
+      totalSegments: 1,
+      segmentLimit: 100,
+    });
+  });
 });
