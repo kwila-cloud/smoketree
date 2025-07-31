@@ -32,7 +32,7 @@ export async function attemptSendMessage(DB: any, messageUuid: string) {
   const now = new Date().toISOString();
   // Check monthly segment limit
   const usageRow = await DB.prepare(
-    `SELECT COALESCE(SUM(COALESCE(segments, 0)), 0) as used FROM message WHERE organization_uuid = ? AND strftime('%Y-%m', created_at) = ?`,
+    `SELECT COALESCE(SUM(COALESCE(segments, 0)), 0) as used FROM message WHERE organization_uuid = ? AND strftime('%Y-%m', created_at) = ? AND (SELECT status FROM message_attempt WHERE message_uuid = message.uuid ORDER BY attempted_at DESC LIMIT 1) = 'sent'`,
   )
     .bind(organizationUuid, month)
     .first();
