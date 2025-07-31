@@ -61,13 +61,13 @@ export class MessageCreate extends OpenAPIRoute {
     const { messages } = data.body;
 
     const inserts = messages.map(msg => ({
-        uuid: crypto.randomUUID(),
-        organization_uuid: organization.uuid,
-        to_number: msg.to,
-        content: msg.content,
-        segments: estimateSegments(msg.content),
-        current_status: 'pending',
-      }));
+      uuid: crypto.randomUUID(),
+      organization_uuid: organization.uuid,
+      to_number: msg.to,
+      content: msg.content,
+      segments: estimateSegments(msg.content),
+      current_status: 'pending',
+    }));
 
     const insertStmt = DB.prepare(
       `INSERT INTO message (uuid, organization_uuid, to_number, content, segments, current_status) VALUES (?, ?, ?, ?, ?, ?)`
@@ -77,12 +77,12 @@ export class MessageCreate extends OpenAPIRoute {
 
     await batch; // Execute the batch insert
 
-    const results = [];
-    // AI!: figure out a way to parallelize this loop
-    for (const insert of inserts) {
-      const result = await attemptSendMessage(DB, insert.uuid);
-      results.push(result);
-    }
+    // Parallelize message sending
+    const results = await Promise.all(
+      inserts.map(async (insert) => {
+        return await attemptSendMessage(DB, insert.uuid);
+      })
+    );
 
     return c.json({ results });
   }
