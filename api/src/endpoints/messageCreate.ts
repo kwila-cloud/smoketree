@@ -61,6 +61,7 @@ export class MessageCreate extends OpenAPIRoute {
     const { messages } = data.body;
 
     const inserts = messages.map(msg => {
+      // AI!: inline this value
       const messageUuid = crypto.randomUUID();
       return {
         uuid: messageUuid,
