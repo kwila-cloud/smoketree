@@ -157,10 +157,10 @@ describe("UsageStatsGetAll endpoint", () => {
 
   it("only counts messages with 'sent' message attempts", async () => {
     // Insert a message
-    const messageUuid1 = crypto.randomUUID();
-    const messageUuid2 = crypto.randomUUID();
-    const messageUuid3 = crypto.randomUUID();
-    const messageUuid4 = crypto.randomUUID();
+    const messageUuid1 = "msg-1";
+    const messageUuid2 = "msg-2";
+    const messageUuid3 = "msg-3";
+    const messageUuid4 = "msg-4";
 
     await db.prepare(
       `INSERT INTO message (uuid, organization_uuid, to_number, content, segments, current_status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
