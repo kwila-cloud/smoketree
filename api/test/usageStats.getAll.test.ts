@@ -157,9 +157,23 @@ describe("UsageStatsGetAll endpoint", () => {
 
   it("only counts messages with 'sent' message attempts", async () => {
     // Insert a message
+    const messageUuid1 = crypto.randomUUID();
+    const messageUuid2 = crypto.randomUUID();
+    const messageUuid3 = crypto.randomUUID();
+    const messageUuid4 = crypto.randomUUID();
+
     await db.prepare(
       `INSERT INTO message (uuid, organization_uuid, to_number, content, segments, current_status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-    ).bind("msg-1", "org-1", "+123", "hi", 2, "sent", "2025-06-01T00:00:00Z", "2025-06-01T00:00:00Z").run();
+    ).bind(messageUuid1, "org-1", "+123", "hi", 2, "sent", "2025-06-01T00:00:00Z", "2025-06-01T00:00:00Z").run();
+    await db.prepare(
+      `INSERT INTO message (uuid, organization_uuid, to_number, content, segments, current_status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind(messageUuid2, "org-1", "+123", "hi", 2, "sent", "2025-06-01T00:00:00Z", "2025-06-01T00:00:00Z").run();
+    await db.prepare(
+      `INSERT INTO message (uuid, organization_uuid, to_number, content, segments, current_status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind(messageUuid3, "org-1", "+123", "hi", 2, "sent", "2025-06-01T00:00:00Z", "2025-06-01T00:00:00Z").run();
+    await db.prepare(
+      `INSERT INTO message (uuid, organization_uuid, to_number, content, segments, current_status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind(messageUuid4, "org-1", "+123", "hi", 2, "sent", "2025-06-01T00:00:00Z", "2025-06-01T00:00:00Z").run();
 
     // Insert message attempts with different statuses
     await db.prepare(
@@ -167,7 +181,7 @@ describe("UsageStatsGetAll endpoint", () => {
     )
       .bind(
         crypto.randomUUID(),
-        "msg-1",
+        messageUuid1,
         "pending",
         "",
         "2025-06-01T00:00:00Z",
@@ -178,7 +192,7 @@ describe("UsageStatsGetAll endpoint", () => {
     )
       .bind(
         crypto.randomUUID(),
-        "msg-1",
+        messageUuid2,
         "failed",
         "",
         "2025-06-02T00:00:00Z",
@@ -189,7 +203,7 @@ describe("UsageStatsGetAll endpoint", () => {
     )
       .bind(
         crypto.randomUUID(),
-        "msg-1",
+        messageUuid3,
         "rate_limited",
         "",
         "2025-06-03T00:00:00Z",
@@ -200,7 +214,7 @@ describe("UsageStatsGetAll endpoint", () => {
     )
       .bind(
         crypto.randomUUID(),
-        crypto.randomUUID(),
+        messageUuid4,
         "sent",
         "",
         "2025-06-04T00:00:00Z",
