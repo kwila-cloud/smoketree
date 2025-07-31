@@ -77,7 +77,7 @@ export class MessageCreate extends OpenAPIRoute {
 
     await batch; // Execute the batch insert
 
-    // Parallelize message sending
+    // Parallelize adding the message attempts
     const results = await Promise.all(
       inserts.map(async (insert) => {
         return await attemptSendMessage(DB, insert.uuid);
