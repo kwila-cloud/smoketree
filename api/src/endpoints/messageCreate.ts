@@ -60,16 +60,14 @@ export class MessageCreate extends OpenAPIRoute {
     const data = await this.getValidatedData<typeof this.schema>();
     const { messages } = data.body;
 
-    const inserts = messages.map(msg => {
-      return {
+    const inserts = messages.map(msg => ({
         uuid: crypto.randomUUID(),
         organization_uuid: organization.uuid,
         to_number: msg.to,
         content: msg.content,
         segments: estimateSegments(msg.content),
-        current_status: 'pending'
-      };
-    });
+        current_status: 'pending',
+      }));
 
     const insertStmt = DB.prepare(
       `INSERT INTO message (uuid, organization_uuid, to_number, content, segments, current_status) VALUES (?, ?, ?, ?, ?, ?)`
