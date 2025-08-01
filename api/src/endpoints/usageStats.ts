@@ -67,7 +67,7 @@ export class UsageStatsGetAll extends OpenAPIRoute {
     // Ensure current month is included
     const currentMonthExists = result.some(item => item.month === currentMonth);
     if (!currentMonthExists) {
-      result.push({
+      result.unshift({
         month: currentMonth,
         totalMessages: 0,
         totalSegments: 0,
