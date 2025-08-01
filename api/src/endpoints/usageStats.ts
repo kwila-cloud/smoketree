@@ -2,6 +2,7 @@
 import { OpenAPIRoute } from "chanfana";
 import { z } from "zod";
 import type { AppContext } from "../types";
+import { getCurrentMonth } from "../utils";
 
 export class UsageStatsGetAll extends OpenAPIRoute {
   schema = {
@@ -27,6 +28,8 @@ export class UsageStatsGetAll extends OpenAPIRoute {
   async handle(c: AppContext) {
     const organization = c.get("organization");
     const { DB } = c.env;
+    const currentMonth = getCurrentMonth();
+
     // Query usage stats grouped by month (YYYY-MM)
     const rows = await DB.prepare(
       `SELECT 
@@ -60,6 +63,18 @@ export class UsageStatsGetAll extends OpenAPIRoute {
       totalSegments: row.totalSegments,
       segmentLimit: limits[row.month] ?? 0,
     }));
+
+    // Ensure current month is included
+    const currentMonthExists = result.some(item => item.month === currentMonth);
+    if (!currentMonthExists) {
+      result.unshift({
+        month: currentMonth,
+        totalMessages: 0,
+        totalSegments: 0,
+        segmentLimit: limits[currentMonth] ?? 0,
+      });
+    }
+
     return c.json(result);
   }
 }

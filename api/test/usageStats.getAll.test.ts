@@ -6,6 +6,7 @@ import { requireApiKey } from "../src/auth";
 import { Env, ApiKeyType } from "../src/types";
 import { Organization } from "../src/entities";
 import { createTestDb } from "./utils";
+import { getCurrentMonth } from "../src/utils";
 
 
 describe("UsageStatsGetAll endpoint", () => {
@@ -86,16 +87,10 @@ describe("UsageStatsGetAll endpoint", () => {
     const res = await simulateRequest("org-1", "user");
     const data = await res.json();
     expect(data).toEqual([
+      { month: getCurrentMonth(), totalMessages: 0, totalSegments: 0, segmentLimit: 0 },
       { month: "2025-06", totalMessages: 1, totalSegments: 2, segmentLimit: 100 },
       { month: "2025-05", totalMessages: 1, totalSegments: 1, segmentLimit: 50 },
     ]);
-    expect(res.status).toBe(200);
-  });
-
-  it("returns an empty array if no messages exist", async () => {
-    const res = await simulateRequest("org-1", "user");
-    const data = await res.json();
-    expect(data).toEqual([]);
     expect(res.status).toBe(200);
   });
 
@@ -142,6 +137,7 @@ describe("UsageStatsGetAll endpoint", () => {
     const res1 = await simulateRequest("org-1", "user");
     const data1 = await res1.json();
     expect(data1).toEqual([
+      { month: getCurrentMonth(), totalMessages: 0, totalSegments: 0, segmentLimit: 0 },
       { month: "2025-06", totalMessages: 1, totalSegments: 2, segmentLimit: 100 },
     ]);
     expect(res1.status).toBe(200);
@@ -150,6 +146,7 @@ describe("UsageStatsGetAll endpoint", () => {
     const res2 = await simulateRequest("org-2", "user");
     const data2 = await res2.json();
     expect(data2).toEqual([
+      { month: getCurrentMonth(), totalMessages: 0, totalSegments: 0, segmentLimit: 0 },
       { month: "2025-06", totalMessages: 1, totalSegments: 3, segmentLimit: 200 },
     ]);
     expect(res2.status).toBe(200);
@@ -224,8 +221,16 @@ describe("UsageStatsGetAll endpoint", () => {
     const res = await simulateRequest("org-1", "user");
     const data = await res.json();
     expect(data).toEqual([
+      { month: getCurrentMonth(), totalMessages: 0, totalSegments: 0, segmentLimit: 0 },
       { month: "2025-06", totalMessages: 1, totalSegments: 1, segmentLimit: 100 },
     ]);
     expect(res.status).toBe(200);
+  });
+
+  it("includes the current month even when there is no usage", async () => {
+    const res = await simulateRequest("org-1", "user");
+    const data = await res.json();
+    const currentMonth = getCurrentMonth();
+    expect(data[0].month).toBe(currentMonth);
   });
 });
