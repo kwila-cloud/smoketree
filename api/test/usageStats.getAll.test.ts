@@ -6,6 +6,7 @@ import { requireApiKey } from "../src/auth";
 import { Env, ApiKeyType } from "../src/types";
 import { Organization } from "../src/entities";
 import { createTestDb } from "./utils";
+import { getCurrentMonth } from "../src/utils";
 
 
 describe("UsageStatsGetAll endpoint", () => {
@@ -227,5 +228,13 @@ describe("UsageStatsGetAll endpoint", () => {
       { month: "2025-06", totalMessages: 1, totalSegments: 1, segmentLimit: 100 },
     ]);
     expect(res.status).toBe(200);
+  });
+
+  it("includes the current month even when there is no usage", async () => {
+    const res = await simulateRequest("org-1", "user");
+    const data = await res.json();
+    const currentMonth = getCurrentMonth();
+    const currentMonthData = data.find((item: any) => item.month === currentMonth);
+    expect(currentMonthData).toBeDefined();
   });
 });
