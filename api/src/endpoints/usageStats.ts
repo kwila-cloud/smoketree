@@ -43,10 +43,9 @@ export class UsageStatsGetAll extends OpenAPIRoute {
       ORDER BY month DESC`
     ).bind(organization.uuid).all();
 
-    const months = rows.results.map((r: any) => r.month);
 
     // Ensure current month is included
-    const currentMonthExists = months.includes(currentMonth);
+    const currentMonthExists = rows.results.some(({month}) => month == currentMonth);
     if (!currentMonthExists) {
       rows.results.unshift({
         month: currentMonth,
@@ -56,6 +55,7 @@ export class UsageStatsGetAll extends OpenAPIRoute {
     }
 
     // Get segment limits for all months in one query
+    const months = rows.results.map((r: any) => r.month);
     let limits: Record<string, number> = {};
     if (months.length > 0) {
       const placeholders = months.map(() => '?').join(',');
